@@ -41,10 +41,12 @@ module.exports = async function carouselHandler(interaction) {
     }
 
     // ❤️ like
-    likes[user.id] ??= [];
-    likes[user.id].push(profil.key);
-	
-	await handleMatch(interaction, user, profil);
+    if (reaction.emoji.name === '❤️') {
+  likes[user.id] ??= [];
+  likes[user.id].push(profil.key);
+
+  await handleMatch(interaction, user, profil);
+}
 
 
     // vérification match (sera déplacée à l’étape suivante)
