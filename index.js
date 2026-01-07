@@ -65,7 +65,16 @@ function profileEmbed(p) {
     .setTitle(`💘 ${p.prenom} ${p.nom}`)
     .setDescription(
       `**Âge :** ${p.age}\n` +
+      `**Anniversaire :** ${p.anniversaire}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
+
+      `**Quartier :** ${p.quartier}\n` +
+      `**Finances :** ${p.finances}\n\n` +
+
+      `**Situation :** ${p.situation}\n` +
+      `**Orientation :** ${p.orientation}\n` +
+      `**Recherche :** ${p.recherche}\n\n` +
+
       `**Description :**\n${p.description}`
     )
     .setImage(p.image)
@@ -77,20 +86,29 @@ function previewProfileEmbed(p) {
     .setTitle('👀 Prévisualisation')
     .setDescription(
       `**Prénom :** ${p.prenom}\n` +
-      `**Nom :** ${p.nom}\n` +
-      `**Sexe :** ${p.sexe}\n\n` +
+      `**Nom :** ${p.nom}\n\n` +
+
       `**Âge :** ${p.age}\n` +
-      `**Anniversaire :** ${p.anniversaire}\n\n` +
+      `**Anniversaire :** ${p.anniversaire}\n` +
+      `**Sexe :** ${p.sexe}\n\n` +
+
       `**Quartier :** ${p.quartier}\n` +
       `**Finances :** ${p.finances}\n\n` +
+
       `**Situation :** ${p.situation}\n` +
       `**Orientation :** ${p.orientation}\n` +
       `**Recherche :** ${p.recherche}\n\n` +
+
       `**Description :**\n${p.description}`
     )
+
     .setImage(p.image)
-    .setColor(0x00ffcc);
+    .setColor(0x00ffcc)
+    .setFooter({ text: 'Confirme ou modifie ton profil 👇' });
+
 }
+
+
 
 // ===== RANDOM =====
 function getRandomProfile(channelId) {
@@ -170,21 +188,43 @@ client.on('interactionCreate', async interaction => {
           content: '✏️ Quel champ modifier ?',
           components: [
             new ActionRowBuilder().addComponents(
-              new ButtonBuilder().setCustomId('edit_prenom').setLabel('Prénom').setStyle(ButtonStyle.Secondary),
-              new ButtonBuilder().setCustomId('edit_age').setLabel('Âge').setStyle(ButtonStyle.Secondary),
-              new ButtonBuilder().setCustomId('edit_description').setLabel('Description').setStyle(ButtonStyle.Secondary),
-              new ButtonBuilder().setCustomId('edit_image').setLabel('Image').setStyle(ButtonStyle.Secondary)
-            )
+  new ButtonBuilder().setCustomId('edit_prenom').setLabel('Prénom').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_nom').setLabel('Nom').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_age').setLabel('Âge').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_anniversaire').setLabel('Anniversaire').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_sexe').setLabel('Sexe').setStyle(ButtonStyle.Secondary)
+),
+new ActionRowBuilder().addComponents(
+  new ButtonBuilder().setCustomId('edit_quartier').setLabel('Quartier').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_finances').setLabel('Finances').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_situation').setLabel('Situation').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_orientation').setLabel('Orientation').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_recherche').setLabel('Recherche').setStyle(ButtonStyle.Secondary)
+),
+new ActionRowBuilder().addComponents(
+  new ButtonBuilder().setCustomId('edit_description').setLabel('Description').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('edit_image').setLabel('Image').setStyle(ButtonStyle.Secondary)
+)
+
           ]
         });
       }
 
       const editable = {
-        edit_prenom: 'prenom',
-        edit_age: 'age',
-        edit_description: 'description',
-        edit_image: 'image'
-      };
+  edit_prenom: 'prenom',
+  edit_nom: 'nom',
+  edit_age: 'age',
+  edit_anniversaire: 'anniversaire',
+  edit_sexe: 'sexe',
+  edit_quartier: 'quartier',
+  edit_finances: 'finances',
+  edit_situation: 'situation',
+  edit_orientation: 'orientation',
+  edit_recherche: 'recherche',
+  edit_description: 'description',
+  edit_image: 'image'
+};
+
 
       if (editable[i.customId]) {
         const field = editable[i.customId];
@@ -260,23 +300,56 @@ if (interaction.commandName === 'creerprofil') {
     } 
     // Fin du formulaire
     else {
-      collector.stop();
+  col.stop();
 
+  const previewMsg = await dm.send({
+    embeds: [previewProfileEmbed(data)],
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('confirm_profile')
+          .setLabel('✅ Publier')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId('edit_profile')
+          .setLabel('✏️ Modifier')
+          .setStyle(ButtonStyle.Secondary)
+      )
+    ]
+  });
+
+  const buttonCollector = previewMsg.createMessageComponentCollector({
+    time: 120000
+  });
+
+  buttonCollector.on('collect', async i => {
+    if (i.user.id !== userId) {
+      return i.reply({ content: '❌ Ce bouton ne t’est pas destiné', ephemeral: true });
+    }
+
+    // ✅ CONFIRMATION
+    if (i.customId === 'confirm_profile') {
       profiles[userId] ??= {};
       profiles[userId][`${data.prenom} ${data.nom}`] = data;
       saveProfiles();
 
-      await dm.send('🎉 Ton profil a été créé avec succès !');
+      await i.update({
+        content: '🎉 Profil publié avec succès !',
+        embeds: [],
+        components: []
+      });
     }
-  });
 
-  collector.on('end', (_, reason) => {
-    if (reason === 'time') {
-      dm.send('⏰ Temps écoulé. Tu peux relancer la création avec /creerprofil.');
+    // ✏️ MODIFICATION
+    if (i.customId === 'edit_profile') {
+      await i.update({
+        content: '✏️ D’accord, on recommence la création du profil.',
+        embeds: [],
+        components: []
+      });
     }
   });
 }
-
 
   // ===== PROFIL ALÉATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
