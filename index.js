@@ -18,10 +18,9 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.DirectMessages
   ],
-  partials: ['CHANNEL', 'MESSAGE', 'REACTION']
+  partials: ['CHANNEL']
 });
 
 // ===== DATA =====
@@ -49,16 +48,17 @@ function getAllProfiles() {
 const commands = [
   new SlashCommandBuilder().setName('creerprofil').setDescription('Créer un profil'),
   new SlashCommandBuilder().setName('voirprofils').setDescription('Voir tous les profils'),
+  new SlashCommandBuilder().setName('mesprofils').setDescription('Voir et gérer tes profils'),
   new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire')
 ].map(c => c.toJSON());
-new SlashCommandBuilder()
-  .setName('mesprofils')
-  .setDescription('Voir et gérer tes profils'),
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
-  await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+  await rest.put(
+    Routes.applicationCommands(process.env.CLIENT_ID),
+    { body: commands }
+  );
   console.log('✅ Slash commands prêtes');
 })();
 
@@ -68,10 +68,7 @@ function profileEmbed(p) {
     .setTitle(`💘 ${p.prenom} ${p.nom}`)
     .setDescription(
       `**Âge :** ${p.age}\n` +
-      `**Sexe :** ${p.sexe}\n` +
-      `**Quartier :** ${p.quartier}\n\n` +
-      `**Situation :** ${p.situation}\n` +
-      `**Orientation :** ${p.orientation}\n\n` +
+      `**Sexe :** ${p.sexe}\n\n` +
       `**Description :**\n${p.description}`
     )
     .setImage(p.image)
@@ -80,7 +77,7 @@ function profileEmbed(p) {
 
 function previewProfileEmbed(p) {
   return new EmbedBuilder()
-    .setTitle('👀 Prévisualisation de ton profil')
+    .setTitle('👀 Prévisualisation')
     .setDescription(
       `**Prénom :** ${p.prenom}\n` +
       `**Nom :** ${p.nom}\n` +
@@ -110,116 +107,21 @@ function getRandomProfile(channelId) {
 
 // ===== INTERACTIONS =====
 client.on('interactionCreate', async interaction => {
-
-// ===== MES PROFILS =====
-if (interaction.commandName === 'mesprofils') {
-  const userProfiles = profiles[userId]
-    ? Object.entries(profiles[userId]).map(([key, value]) => ({
-        key,
-        ...value
-      }))
-    : [];
-
-  if (!userProfiles.length) {
-    return interaction.reply({
-      content: '❌ Tu n’as encore créé aucun profil.',
-      ephemeral: true
-    });
-  }
-
-  let index = 0;
-
-  const buttons = () =>
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('prev_my')
-        .setLabel('⬅️')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(index === 0),
-
-      new ButtonBuilder()
-        .setCustomId('edit_my')
-        .setLabel('✏️ Modifier')
-        .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setCustomId('delete_my')
-        .setLabel('🗑️ Supprimer')
-        .setStyle(ButtonStyle.Danger),
-
-      new ButtonBuilder()
-        .setCustomId('next_my')
-        .setLabel('➡️')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(index === userProfiles.length - 1)
-    );
-
-  const msg = await interaction.reply({
-    embeds: [profileEmbed(userProfiles[index])],
-    components: [buttons()],
-    fetchReply: true,
-    ephemeral: true
-  });
-
-  const collector = msg.createMessageComponentCollector({ time: 300000 });
-
-  collector.on('collect', async i => {
-    if (i.user.id !== userId) {
-      return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
-    }
-
-    if (i.customId === 'next_my') index++;
-    if (i.customId === 'prev_my') index--;
-
-    // 🗑️ SUPPRESSION
-    if (i.customId === 'delete_my') {
-      const key = userProfiles[index].key;
-      delete profiles[userId][key];
-      saveProfiles();
-
-      userProfiles.splice(index, 1);
-
-      if (!userProfiles.length) {
-        return i.update({
-          content: '🗑️ Profil supprimé. Tu n’as plus de profil.',
-          embeds: [],
-          components: []
-        });
-      }
-
-      if (index >= userProfiles.length) index--;
-
-      return i.update({
-        embeds: [profileEmbed(userProfiles[index])],
-        components: [buttons()]
-      });
-    }
-
-    // ✏️ MODIFIER (simple pour l’instant)
-    if (i.customId === 'edit_my') {
-      return i.reply({
-        content:
-          '✏️ Fonction de modification en cours.\n(Prochaine étape : modifier champ par champ)',
-        ephemeral: true
-      });
-    }
-
-    await i.update({
-      embeds: [profileEmbed(userProfiles[index])],
-      components: [buttons()]
-    });
-  });
-}
-
   if (!interaction.isChatInputCommand()) return;
 
   const userId = interaction.user.id;
 
-  // ===== VOIR PROFILS =====
-  if (interaction.commandName === 'voirprofils') {
-    const allProfiles = getAllProfiles();
-    if (!allProfiles.length) {
-      return interaction.reply('❌ Aucun profil disponible.');
+  // ===== MES PROFILS =====
+  if (interaction.commandName === 'mesprofils') {
+    const userProfiles = profiles[userId]
+      ? Object.entries(profiles[userId]).map(([key, value]) => ({ key, ...value }))
+      : [];
+
+    if (!userProfiles.length) {
+      return interaction.reply({
+        content: '❌ Tu n’as encore créé aucun profil.',
+        ephemeral: true
+      });
     }
 
     let index = 0;
@@ -232,30 +134,49 @@ if (interaction.commandName === 'mesprofils') {
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(index === 0),
         new ButtonBuilder()
+          .setCustomId('delete')
+          .setLabel('🗑️ Supprimer')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
           .setCustomId('next')
           .setLabel('➡️')
           .setStyle(ButtonStyle.Secondary)
-          .setDisabled(index === allProfiles.length - 1)
+          .setDisabled(index === userProfiles.length - 1)
       );
 
     const msg = await interaction.reply({
-      embeds: [profileEmbed(allProfiles[index])],
+      embeds: [profileEmbed(userProfiles[index])],
       components: [buttons()],
-      fetchReply: true
+      fetchReply: true,
+      ephemeral: true
     });
 
     const collector = msg.createMessageComponentCollector({ time: 300000 });
 
     collector.on('collect', async i => {
-      if (i.user.id !== userId) {
-        return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
-      }
+      if (i.user.id !== userId) return;
 
       if (i.customId === 'next') index++;
       if (i.customId === 'prev') index--;
 
+      if (i.customId === 'delete') {
+        delete profiles[userId][userProfiles[index].key];
+        saveProfiles();
+        userProfiles.splice(index, 1);
+
+        if (!userProfiles.length) {
+          return i.update({
+            content: '🗑️ Tous tes profils ont été supprimés.',
+            embeds: [],
+            components: []
+          });
+        }
+
+        if (index >= userProfiles.length) index--;
+      }
+
       await i.update({
-        embeds: [profileEmbed(allProfiles[index])],
+        embeds: [profileEmbed(userProfiles[index])],
         components: [buttons()]
       });
     });
