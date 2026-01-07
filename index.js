@@ -29,6 +29,8 @@ let profiles = fs.existsSync('./profiles.json')
   : {};
 
 const seenProfiles = {};
+const likes = {};
+
 
 // ===== UTIL =====
 const saveProfiles = () =>
@@ -352,15 +354,67 @@ if (interaction.commandName === 'creerprofil') {
   });
 }
 
-
-  // ===== PROFIL ALÉATOIRE =====
-  if (interaction.commandName === 'profilaleatoire') {
-    const profil = getRandomProfile(interaction.channel.id);
-    if (!profil) return interaction.reply('♻️ Tous vus.');
-
-    await interaction.reply({ embeds: [profileEmbed(profil)] });
+ // ===== PROFIL ALÉATOIRE =====
+if (interaction.commandName === 'profilaleatoire') {
+  const profil = getRandomProfile(interaction.channel.id);
+  if (!profil) {
+    return interaction.reply('♻️ Tous les profils ont été vus.');
   }
-});
+
+  const msg = await interaction.reply({
+    embeds: [profileEmbed(profil)],
+    fetchReply: true
+  });
+
+  // Réactions
+  await msg.react('❤️');
+  await msg.react('❌');
+
+  const collector = msg.createReactionCollector({
+    filter: (reaction, user) =>
+      ['❤️', '❌'].includes(reaction.emoji.name) && !user.bot,
+    max: 1,
+    time: 120000
+  });
+
+  collector.on('collect', async (reaction, user) => {
+    // ❌ Refus
+    if (reaction.emoji.name === '❌') {
+      return msg.delete().catch(() => {});
+    }
+
+    // ❤️ LIKE
+    likes[user.id] ??= [];
+    likes[user.id].push(profil.key);
+
+    const ownerLikes = likes[profil.ownerId] || [];
+    const userProfiles = Object.keys(profiles[user.id] || {});
+
+    const mutual = userProfiles.find(p => ownerLikes.includes(p));
+
+    if (!mutual) {
+      return interaction.followUp(`❤️ ${user.username} a liké ${profil.prenom}`);
+    }
+
+    // 💘 MATCH → création du thread
+    const forum = interaction.guild.channels.cache.find(
+      c => c.type === 15 && c.name === '🫶-matchs'
+    );
+
+    if (!forum) {
+      return interaction.followUp('❌ Le forum 🫶-matchs est introuvable.');
+    }
+
+    await forum.threads.create({
+      name: `💘 ${profil.prenom} x ${profil.prenom}`,
+      autoArchiveDuration: 1440,
+      message: {
+        content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
+      }
+    });
+  });
+}
+
 
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
