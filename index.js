@@ -51,6 +51,9 @@ const commands = [
   new SlashCommandBuilder().setName('voirprofils').setDescription('Voir tous les profils'),
   new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire')
 ].map(c => c.toJSON());
+new SlashCommandBuilder()
+  .setName('mesprofils')
+  .setDescription('Voir et gérer tes profils'),
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
@@ -107,6 +110,107 @@ function getRandomProfile(channelId) {
 
 // ===== INTERACTIONS =====
 client.on('interactionCreate', async interaction => {
+
+// ===== MES PROFILS =====
+if (interaction.commandName === 'mesprofils') {
+  const userProfiles = profiles[userId]
+    ? Object.entries(profiles[userId]).map(([key, value]) => ({
+        key,
+        ...value
+      }))
+    : [];
+
+  if (!userProfiles.length) {
+    return interaction.reply({
+      content: '❌ Tu n’as encore créé aucun profil.',
+      ephemeral: true
+    });
+  }
+
+  let index = 0;
+
+  const buttons = () =>
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('prev_my')
+        .setLabel('⬅️')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(index === 0),
+
+      new ButtonBuilder()
+        .setCustomId('edit_my')
+        .setLabel('✏️ Modifier')
+        .setStyle(ButtonStyle.Primary),
+
+      new ButtonBuilder()
+        .setCustomId('delete_my')
+        .setLabel('🗑️ Supprimer')
+        .setStyle(ButtonStyle.Danger),
+
+      new ButtonBuilder()
+        .setCustomId('next_my')
+        .setLabel('➡️')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(index === userProfiles.length - 1)
+    );
+
+  const msg = await interaction.reply({
+    embeds: [profileEmbed(userProfiles[index])],
+    components: [buttons()],
+    fetchReply: true,
+    ephemeral: true
+  });
+
+  const collector = msg.createMessageComponentCollector({ time: 300000 });
+
+  collector.on('collect', async i => {
+    if (i.user.id !== userId) {
+      return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
+    }
+
+    if (i.customId === 'next_my') index++;
+    if (i.customId === 'prev_my') index--;
+
+    // 🗑️ SUPPRESSION
+    if (i.customId === 'delete_my') {
+      const key = userProfiles[index].key;
+      delete profiles[userId][key];
+      saveProfiles();
+
+      userProfiles.splice(index, 1);
+
+      if (!userProfiles.length) {
+        return i.update({
+          content: '🗑️ Profil supprimé. Tu n’as plus de profil.',
+          embeds: [],
+          components: []
+        });
+      }
+
+      if (index >= userProfiles.length) index--;
+
+      return i.update({
+        embeds: [profileEmbed(userProfiles[index])],
+        components: [buttons()]
+      });
+    }
+
+    // ✏️ MODIFIER (simple pour l’instant)
+    if (i.customId === 'edit_my') {
+      return i.reply({
+        content:
+          '✏️ Fonction de modification en cours.\n(Prochaine étape : modifier champ par champ)',
+        ephemeral: true
+      });
+    }
+
+    await i.update({
+      embeds: [profileEmbed(userProfiles[index])],
+      components: [buttons()]
+    });
+  });
+}
+
   if (!interaction.isChatInputCommand()) return;
 
   const userId = interaction.user.id;
