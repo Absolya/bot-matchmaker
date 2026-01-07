@@ -20,11 +20,11 @@ module.exports = async function handleMatch(interaction, user, profil) {
 
   // 🛡️ empêcher les doublons de match
   const matchKey = [userId, ownerId].sort().join('-');
-  matchs ??= {};
-  if (matchs[matchKey]) return;
+  matches ??= {};
+  if (matches[matchKey]) return;
 
   // 💾 enregistrer le match
-  matche[matchKey] = true;
+  matches[matchKey] = true;
 
   // 🔎 trouver le forum
   const forum = interaction.guild.channels.cache.find(
