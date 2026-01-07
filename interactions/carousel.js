@@ -55,26 +55,51 @@ module.exports = async function carouselHandler(interaction) {
   }
 
   // 💘 Créer un match
-  if (interaction.customId.startsWith('create_match:')) {
-    const ownerId = interaction.customId.split(':')[1];
-    const userId = interaction.user.id;
+if (interaction.customId.startsWith('create_match:')) {
+  const ownerId = interaction.customId.split(':')[1];
+  const userId = interaction.user.id;
 
-    if (ownerId === userId) {
-      return interaction.reply({
-        content: '❌ Tu ne peux pas créer un match avec toi-même.',
-        ephemeral: true
-      });
+  if (ownerId === userId) {
+    return interaction.reply({
+      content: '❌ Tu ne peux pas créer un match avec toi-même.',
+      ephemeral: true
+    });
+  }
+
+  // ✅ ACK correct pour un bouton
+  await interaction.deferUpdate();
+
+  const forum = interaction.guild.channels.cache.find(
+    c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
+  );
+
+  if (!forum) {
+    return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+  }
+
+  const matchKey = [userId, ownerId].sort().join('-');
+  matchs[matchKey] ??= false;
+
+  if (matchs[matchKey]) {
+    return interaction.channel.send('⚠️ Un match existe déjà.');
+  }
+
+  matchs[matchKey] = true;
+
+  await forum.threads.create({
+    name: `💘 ${interaction.user.username} x <@${ownerId}>`,
+    autoArchiveDuration: 1440,
+    message: {
+      content: `💘 **MATCH !**\n\n${interaction.user} & <@${ownerId}>\n\n✨ Faites connaissance ici !`
     }
+  });
 
-    await interaction.deferReply({ ephemeral: true });
+  // 🔔 feedback utilisateur
+  await interaction.channel.send(
+    `💘 Match créé entre ${interaction.user} et <@${ownerId}> !`
+  );
+}
 
-    const forum = interaction.guild.channels.cache.find(
-      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
-    );
-
-    if (!forum) {
-      return interaction.editReply('❌ Forum 🫶-matchs introuvable.');
-    }
 
     // 🔒 éviter doublon
     const matchKey = [userId, ownerId].sort().join('-');

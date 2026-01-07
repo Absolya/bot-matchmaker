@@ -1,12 +1,12 @@
 const fs = require('fs');
-const path = require('path');
+const path = require('/data/profiles.json');
 const matchs = {};
 
 const DATA_PATH = path.join(__dirname, '../profiles.json');
 
 // ===== DATA =====
-let profiles = fs.existsSync(DATA_PATH)
-  ? JSON.parse(fs.readFileSync(DATA_PATH, 'utf8'))
+let profiles = fs.existsSync(path)
+  ? JSON.parse(fs.readFileSync(path, 'utf8'))
   : {};
 
 const likes = {};        // { userId: [profileKey] }
@@ -14,7 +14,7 @@ const seenProfiles = {}; // { channelId: [profileKey] }
 
 // ===== SAVE =====
 function saveProfiles() {
-  fs.writeFileSync(DATA_PATH, JSON.stringify(profiles, null, 2));
+  fs.writeFileSync(path, JSON.stringify(profiles, null, 2));
 }
 
 // ===== GET ALL PROFILES =====
