@@ -11,6 +11,7 @@ const {
   Routes
 } = require('discord.js');
 const fs = require('fs');
+const { ChannelType } = require('discord.js');
 
 // ===== CLIENT =====
 const client = new Client({
@@ -354,6 +355,7 @@ if (interaction.commandName === 'creerprofil') {
   });
 }
 
+
  // ===== PROFIL ALÉATOIRE =====
 if (interaction.commandName === 'profilaleatoire') {
   const profil = getRandomProfile(interaction.channel.id);
@@ -366,7 +368,6 @@ if (interaction.commandName === 'profilaleatoire') {
     fetchReply: true
   });
 
-  // ✅ RÉACTIONS (LIGNE MANQUANTE CORRIGÉE)
   await msg.react('❤️');
   await msg.react('❌');
 
@@ -378,26 +379,28 @@ if (interaction.commandName === 'profilaleatoire') {
   });
 
   collector.on('collect', async (reaction, user) => {
-    // ❌ Refus
+    // ❌ PASS
     if (reaction.emoji.name === '❌') {
       return msg.delete().catch(() => {});
     }
 
     // ❤️ LIKE
     likes[user.id] ??= [];
-    likes[user.id].push(profil.key);
+    if (!likes[user.id].includes(profil.ownerId)) {
+      likes[user.id].push(profil.ownerId);
+    }
 
+    // 🔁 MATCH ?
     const ownerLikes = likes[profil.ownerId] || [];
-    const userProfiles = Object.keys(profiles[user.id] || {});
-    const mutual = userProfiles.find(p => ownerLikes.includes(p));
+    const isMatch = ownerLikes.includes(user.id);
 
-    if (!mutual) {
+    if (!isMatch) {
       return interaction.followUp(`❤️ ${user.username} a liké ${profil.prenom}`);
     }
 
     // 💘 MATCH → création du thread
     const forum = interaction.guild.channels.cache.find(
-      c => c.type === 15 && c.name === '🫶-matchs'
+      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
     );
 
     if (!forum) {
@@ -405,7 +408,7 @@ if (interaction.commandName === 'profilaleatoire') {
     }
 
     await forum.threads.create({
-      name: `💘 ${profil.prenom} x ${profil.prenom}`,
+      name: `💘 ${user.username} x ${profil.prenom}`,
       autoArchiveDuration: 1440,
       message: {
         content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
