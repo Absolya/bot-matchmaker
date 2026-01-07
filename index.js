@@ -56,6 +56,9 @@ const commands = [
   new SlashCommandBuilder().setName('creerprofil').setDescription('Créer un profil'),
   new SlashCommandBuilder().setName('editerprofil').setDescription('Éditer un profil'),
   new SlashCommandBuilder().setName('supprimerprofil').setDescription('Supprimer un profil'),
+  new SlashCommandBuilder()
+  .setName('voirprofils')
+  .setDescription('Voir tous les profils disponibles'),
   new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir des profils')
 ].map(c => c.toJSON());
 
@@ -127,6 +130,57 @@ function getRandomProfile(channelId) {
 
 // ===== INTERACTIONS =====
 client.on('interactionCreate', async interaction => {
+
+// ===== VOIR TOUS LES PROFILS =====
+if (interaction.commandName === 'voirprofils') {
+  const allProfiles = getAllProfiles();
+
+  if (!allProfiles.length) {
+    return interaction.reply('❌ Aucun profil disponible.');
+  }
+
+  let index = 0;
+
+  const getButtons = () =>
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('prev_profile')
+        .setLabel('⬅️ Précédent')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(index === 0),
+
+      new ButtonBuilder()
+        .setCustomId('next_profile')
+        .setLabel('Suivant ➡️')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(index === allProfiles.length - 1)
+    );
+
+  const msg = await interaction.reply({
+    embeds: [profileEmbed(allProfiles[index])],
+    components: [getButtons()],
+    fetchReply: true
+  });
+
+  const collector = msg.createMessageComponentCollector({
+    time: 300000
+  });
+
+  collector.on('collect', async i => {
+    if (i.user.id !== interaction.user.id) {
+      return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
+    }
+
+    if (i.customId === 'next_profile') index++;
+    if (i.customId === 'prev_profile') index--;
+
+    await i.update({
+      embeds: [profileEmbed(allProfiles[index])],
+      components: [getButtons()]
+    });
+  });
+}
+
   if (!interaction.isChatInputCommand()) return;
 
   const userId = interaction.user.id;
@@ -137,18 +191,18 @@ client.on('interactionCreate', async interaction => {
     const dm = await interaction.user.createDM();
 
     const questions = [
-      ['prenom', '💬 Prénom ?'],
-      ['nom', '💬 Nom ?'],
-      ['sexe', '💬 Sexe ?'],
-      ['age', '💬 Âge ?'],
-      ['anniversaire', '💬 Anniversaire ?'],
-      ['quartier', '💬 Où vis-tu ?'],
-      ['finances', '💬 Situation financière ?'],
-      ['situation', '💬 Situation amoureuse ?'],
-      ['orientation', '💬 Orientation ?'],
-      ['recherche', '💬 Ce que tu recherches ?'],
-      ['description', '💬 Description'],
-      ['image', '🖼️ Image (lien ou upload)']
+      ['prenom', 'Bienvenue dans la création de ton profil sur notre application SWIPE ! Pour commencer, dis nous ton 💬 Prénom ?'],
+      ['nom', 'Ainsi que ton 💬 Nom, ça permets aux utilisateurs de retrouver facilement ton profil'],
+      ['sexe', 'Maintenant, dis-moi sous quel 💬 Sexe te représentes-tu ?'],
+      ['age', 'Ainsi que ton 💬 Âge'],
+      ['anniversaire', 'Et quand devons-nous te souhaiter ton 💬 Anniversaire ?'],
+      ['quartier', 'Parfait ! Maintenant, nous allons passer à des détails importants, mais non obligatoire ! Commençons par 💬 où vis-tu ?'],
+      ['finances', 'Et ta 💬 situation financière ?'],
+      ['situation', 'Maintenant voici les informations nécessaire pour notre application, qul est ta 💬 Situation amoureuse ?'],
+      ['orientation', 'Et ce que tu préfères ? 💬 (Orientation sexuelle)'],
+      ['recherche', 'Pour aider les utilisateurs a en savoir plus, dis nous 💬 ce que tu recherches ?'],
+      ['description', 'Et maintenant, fais nous une 💬 description ! Tu peux mettre ce que tu veux pour accrocher des futurs prétendants !'],
+      ['image', 'Et on termine par une jolie photo de toi ! 🖼️ Image (lien ou upload)']
     ];
 
     let data = {};
