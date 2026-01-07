@@ -49,16 +49,13 @@ const commands = [
   new SlashCommandBuilder().setName('creerprofil').setDescription('Créer un profil'),
   new SlashCommandBuilder().setName('voirprofils').setDescription('Voir tous les profils'),
   new SlashCommandBuilder().setName('mesprofils').setDescription('Voir et gérer tes profils'),
-  new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire'),
+  new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire')
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
-  await rest.put(
-    Routes.applicationCommands(process.env.CLIENT_ID),
-    { body: commands }
-  );
+  await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
   console.log('✅ Slash commands prêtes');
 })();
 
@@ -118,34 +115,17 @@ client.on('interactionCreate', async interaction => {
       : [];
 
     if (!userProfiles.length) {
-      return interaction.reply({
-        content: '❌ Tu n’as encore créé aucun profil.',
-        ephemeral: true
-      });
+      return interaction.reply({ content: '❌ Aucun profil.', ephemeral: true });
     }
 
     let index = 0;
 
     const buttons = () =>
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('prev')
-          .setLabel('⬅️')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(index === 0),
-        new ButtonBuilder()
-          .setCustomId('delete')
-          .setLabel('🗑️ Supprimer')
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId('edit')
-            .setLabel('✏️ Modifier')
-           .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId('next')
-          .setLabel('➡️')
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(index === userProfiles.length - 1)
+        new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Secondary).setDisabled(index === 0),
+        new ButtonBuilder().setCustomId('edit').setLabel('✏️ Modifier').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('delete').setLabel('🗑️').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Secondary).setDisabled(index === userProfiles.length - 1)
       );
 
     const msg = await interaction.reply({
@@ -158,104 +138,65 @@ client.on('interactionCreate', async interaction => {
     const collector = msg.createMessageComponentCollector({ time: 300000 });
 
     collector.on('collect', async i => {
-
-      if (i.customId === 'edit') {
-  return i.reply({
-    content: '✏️ Quel champ veux-tu modifier ?',
-    ephemeral: true,
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('edit_prenom')
-          .setLabel('Prénom')
-          .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-          .setCustomId('edit_age')
-          .setLabel('Âge')
-          .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-          .setCustomId('edit_description')
-          .setLabel('Description')
-          .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-          .setCustomId('edit_image')
-          .setLabel('Image')
-          .setStyle(ButtonStyle.Secondary),
-
-        new ButtonBuilder()
-          .setCustomId('cancel_edit')
-          .setLabel('Annuler')
-          .setStyle(ButtonStyle.Danger)
-      )
-    ]
-  });
-}
-
-const editableFields = {
-  edit_prenom: 'prenom',
-  edit_age: 'age',
-  edit_description: 'description',
-  edit_image: 'image'
-};
-
-if (editableFields[i.customId]) {
-  const field = editableFields[i.customId];
-
-  await i.reply({
-    content: `✏️ Envoie la nouvelle valeur pour **${field}**`,
-    ephemeral: true
-  });
-
-  const dm = await i.user.createDM();
-
-  const msgCollector = dm.createMessageCollector({
-    filter: m => m.author.id === userId,
-    max: 1,
-    time: 120000
-  });
-
-  msgCollector.on('collect', async m => {
-    const newValue =
-      field === 'image' && m.attachments.size
-        ? m.attachments.first().url
-        : m.content;
-
-    profiles[userId][userProfiles[index].key][field] = newValue;
-    saveProfiles();
-
-    await dm.send('✅ Profil mis à jour avec succès !');
-  });
-}
-
-if (i.customId === 'cancel_edit') {
-  return i.update({
-    content: '❌ Modification annulée.',
-    components: []
-  });
-}
-
       if (i.user.id !== userId) return;
 
+      // NAVIGATION
       if (i.customId === 'next') index++;
       if (i.customId === 'prev') index--;
 
+      // SUPPRESSION
       if (i.customId === 'delete') {
         delete profiles[userId][userProfiles[index].key];
         saveProfiles();
         userProfiles.splice(index, 1);
 
         if (!userProfiles.length) {
-          return i.update({
-            content: '🗑️ Tous tes profils ont été supprimés.',
-            embeds: [],
-            components: []
-          });
+          return i.update({ content: '🗑️ Profil supprimé.', embeds: [], components: [] });
         }
 
         if (index >= userProfiles.length) index--;
+      }
+
+      // EDITION
+      if (i.customId === 'edit') {
+        return i.reply({
+          ephemeral: true,
+          content: '✏️ Quel champ modifier ?',
+          components: [
+            new ActionRowBuilder().addComponents(
+              new ButtonBuilder().setCustomId('edit_prenom').setLabel('Prénom').setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder().setCustomId('edit_age').setLabel('Âge').setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder().setCustomId('edit_description').setLabel('Description').setStyle(ButtonStyle.Secondary),
+              new ButtonBuilder().setCustomId('edit_image').setLabel('Image').setStyle(ButtonStyle.Secondary)
+            )
+          ]
+        });
+      }
+
+      const editable = {
+        edit_prenom: 'prenom',
+        edit_age: 'age',
+        edit_description: 'description',
+        edit_image: 'image'
+      };
+
+      if (editable[i.customId]) {
+        const field = editable[i.customId];
+
+        await i.reply({ ephemeral: true, content: `✏️ Envoie la nouvelle valeur pour **${field}**` });
+
+        const dm = await i.user.createDM();
+        const dmCol = dm.createMessageCollector({ max: 1, time: 120000 });
+
+        dmCol.on('collect', async m => {
+          profiles[userId][userProfiles[index].key][field] =
+            field === 'image' && m.attachments.size ? m.attachments.first().url : m.content;
+
+          saveProfiles();
+          await dm.send('✅ Profil mis à jour !');
+        });
+
+        return;
       }
 
       await i.update({
@@ -279,23 +220,14 @@ if (i.customId === 'cancel_edit') {
       ['image', 'Image (lien ou upload)']
     ];
 
-    let data = {};
-    let step = 0;
-
+    let data = {}, step = 0;
     await dm.send(questions[0][1]);
 
-    const col = dm.createMessageCollector({
-      filter: m => m.author.id === userId,
-      time: 300000
-    });
+    const col = dm.createMessageCollector({ time: 300000 });
 
     col.on('collect', async m => {
-      let val = m.content;
-      if (questions[step][0] === 'image' && m.attachments.size > 0) {
-        val = m.attachments.first().url;
-      }
-
-      data[questions[step][0]] = val;
+      const key = questions[step][0];
+      data[key] = key === 'image' && m.attachments.size ? m.attachments.first().url : m.content;
       step++;
 
       if (step < questions.length) {
@@ -303,29 +235,11 @@ if (i.customId === 'cancel_edit') {
       } else {
         col.stop();
 
-        const preview = await dm.send({
-          embeds: [previewProfileEmbed(data)],
-          components: [
-            new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId('confirm')
-                .setLabel('✅ Publier')
-                .setStyle(ButtonStyle.Success)
-            )
-          ]
-        });
+        profiles[userId] ??= {};
+        profiles[userId][`${data.prenom} ${data.nom}`] = data;
+        saveProfiles();
 
-        const btnCol = preview.createMessageComponentCollector({ time: 120000 });
-
-        btnCol.on('collect', async i => {
-          if (i.user.id !== userId) return;
-
-          profiles[userId] ??= {};
-          profiles[userId][`${data.prenom} ${data.nom}`] = data;
-          saveProfiles();
-
-          await i.update({ content: '🎉 Profil publié !', embeds: [], components: [] });
-        });
+        await dm.send('🎉 Profil créé !');
       }
     });
   }
@@ -333,7 +247,7 @@ if (i.customId === 'cancel_edit') {
   // ===== PROFIL ALÉATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
     const profil = getRandomProfile(interaction.channel.id);
-    if (!profil) return interaction.reply('♻️ Tous les profils ont été vus.');
+    if (!profil) return interaction.reply('♻️ Tous vus.');
 
     await interaction.reply({ embeds: [profileEmbed(profil)] });
   }
