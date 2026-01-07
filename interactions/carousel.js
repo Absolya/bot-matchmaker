@@ -1,9 +1,18 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
+const {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ChannelType
+} = require('discord.js');
+
 const { profileEmbed } = require('../utils/embeds');
 const { getRandomProfile, matchs } = require('../utils/storage');
 
 module.exports = async function carouselHandler(interaction) {
-  // ===== Commande /profilaleatoire =====
+
+  // =========================
+  // /profilaleatoire
+  // =========================
   if (interaction.isChatInputCommand()) {
     if (interaction.commandName !== 'profilaleatoire') return;
 
@@ -26,15 +35,16 @@ module.exports = async function carouselHandler(interaction) {
     );
 
     await interaction.editReply({
-  embeds: [embed]
-});
-
-const msg = await interaction.fetchReply();
+      embeds: [profileEmbed(profil)],
+      components: [row]
+    });
 
     return;
   }
 
-  // ===== Boutons =====
+  // =========================
+  // Boutons
+  // =========================
   if (!interaction.isButton()) return;
 
   // ❌ Passer au profil suivant
