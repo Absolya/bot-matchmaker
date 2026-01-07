@@ -43,9 +43,6 @@ if (interaction.commandName === 'creerprofil') {
   const dm = await interaction.user.createDM();
   const userId = interaction.user.id;
   
-    // 🧹 MESSAGE DE RESET (ICI 👇)
-  await dm.send('🧹 On repart de zéro pour la création du profil.');
-
   const questions = [
     ['prenom', '💬 Prénom ?'],
     ['nom', '💬 Nom ?'],
@@ -64,20 +61,6 @@ if (interaction.commandName === 'creerprofil') {
   const data = {};
 
 let cancelled = false;
-
-// 👇 bouton annuler global
-const cancelRow = new ActionRowBuilder().addComponents(
-  new ButtonBuilder()
-    .setCustomId('cancel_creation')
-    .setLabel('❌ Annuler la création')
-    .setStyle(ButtonStyle.Danger)
-);
-
-// message de reset
-await dm.send({
-  content: '🧹 On repart de zéro pour la création du profil.\nTu peux annuler à tout moment 👇',
-  components: [cancelRow]
-});
 
 for (const [key, question] of questions) {
   if (cancelled) return;
