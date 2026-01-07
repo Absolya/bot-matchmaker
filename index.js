@@ -157,71 +157,72 @@ client.on('interactionCreate', async interaction => {
     await dm.send(questions[0][1]);
 
     const col = dm.createMessageCollector({
-      filter: m => m.author.id === userId,
-      time: 300000
+  filter: m => m.author.id === userId,
+  time: 300000
+});
+
+col.on('collect', async m => {
+  let val = m.content;
+
+  if (questions[step][0] === 'image' && m.attachments.size > 0) {
+    val = m.attachments.first().url;
+  }
+
+  data[questions[step][0]] = val;
+  step++;
+
+  if (step < questions.length) {
+    await dm.send(questions[step][1]);
+  } else {
+    col.stop();
+
+    const previewMsg = await dm.send({
+      embeds: [previewProfileEmbed(data)],
+      components: [
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('confirm_profile')
+            .setLabel('✅ Publier')
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId('edit_profile')
+            .setLabel('✏️ Modifier')
+            .setStyle(ButtonStyle.Secondary)
+        )
+      ]
     });
 
-    col.on('collect', async m => {
-      let val = m.content;
-      if (questions[step][0] === 'image' && m.attachments.size > 0) {
-        val = m.attachments.first().url;
+    const buttonCollector =
+      previewMsg.createMessageComponentCollector({ time: 120000 });
+
+    buttonCollector.on('collect', async i => {
+      if (i.user.id !== userId) {
+        return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
       }
 
-      data[questions[step][0]] = val;
-      step++;
+      if (i.customId === 'confirm_profile') {
+        profiles[userId] ??= {};
+        profiles[userId][`${data.prenom} ${data.nom}`] = data;
+        saveProfiles();
 
-      if (step < questions.length) {
-        await dm.send(questions[step][1]);
-      } else {
-        col.stop();
-
-        const previewMsg = await dm.send({
-          embeds: [previewProfileEmbed(data)],
-          components: [
-            new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId('confirm_profile')
-                .setLabel('✅ Publier')
-                .setStyle(ButtonStyle.Success),
-              new ButtonBuilder()
-                .setCustomId('edit_profile')
-                .setLabel('✏️ Modifier')
-                .setStyle(ButtonStyle.Secondary)
-            )
-          ]
+        await i.update({
+          content: '🎉 Profil publié !',
+          embeds: [],
+          components: []
         });
+      }
 
-        const buttonCollector =
-          previewMsg.createMessageComponentCollector({ time: 120000 });
-
-        buttonCollector.on('collect', async i => {
-          if (i.user.id !== userId) {
-            return i.reply({ content: '❌ Pas pour toi', ephemeral: true });
-          }
-
-          if (i.customId === 'confirm_profile') {
-            profiles[userId] ??= {};
-            profiles[userId][`${data.prenom} ${data.nom}`] = data;
-            saveProfiles();
-
-            await i.update({
-              content: '🎉 Profil publié !',
-              embeds: [],
-              components: []
-            });
-          }
-
-          if (i.customId === 'edit_profile') {
-            await i.update({
-              content: '✏️ D’accord, recommençons.',
-              embeds: [],
-              components: []
-            });
-          }
+      if (i.customId === 'edit_profile') {
+        await i.update({
+          content: '✏️ D’accord, recommençons.',
+          embeds: [],
+          components: []
         });
       }
     });
   }
+});
+
 
   // ===== PROFIL ALEATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
