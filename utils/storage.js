@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const matchs = {};
 
 const DATA_PATH = path.join(__dirname, '../profiles.json');
 
@@ -51,6 +52,7 @@ function getRandomProfile(channelId) {
 module.exports = {
   profiles,
   likes,
+  matchs,
   seenProfiles,
   saveProfiles,
   getAllProfiles,

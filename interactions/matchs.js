@@ -2,6 +2,8 @@ const { ChannelType } = require('discord.js');
 const { likes, profiles, matchs } = require('../utils/storage');
 
 module.exports = async function handleMatch(interaction, user, profil) {
+  console.log('🔥 handleMatch appelé');
+  
   // sécurité
   if (!interaction.guild) return;
 
@@ -50,3 +52,5 @@ module.exports = async function handleMatch(interaction, user, profil) {
     `💘 **Match !** ${user} et <@${ownerId}> ont matché 🎉`
   );
 };
+
+
