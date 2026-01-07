@@ -358,7 +358,6 @@ if (interaction.commandName === 'creerprofil') {
 
 // ===== PROFIL ALÉATOIRE =====
 if (interaction.commandName === 'profilaleatoire') {
-// ⏳ on ACK immédiatement l’interaction
   await interaction.deferReply();
 
   const profil = getRandomProfile(interaction.channel.id);
@@ -382,58 +381,63 @@ if (interaction.commandName === 'profilaleatoire') {
   });
 
   collector.on('collect', async (reaction, user) => {
+
+    // ❌ PROFIL SUIVANT
     if (reaction.emoji.name === '❌') {
-      return msg.delete().catch(() => {});
+      await msg.delete().catch(() => {});
+      interaction.channel.send('/profilaleatoire');
+      return;
     }
 
     // ❤️ LIKE
-likes[user.id] ??= [];
-likes[user.id].push(profil.key);
+    likes[user.id] ??= [];
+    likes[user.id].push(profil.key);
 
-// Vérifier si le propriétaire du profil a liké un profil de l'utilisateur
-const ownerLikes = likes[profil.ownerId] || [];
+    const ownerLikes = likes[profil.ownerId] || [];
+    const userProfiles = Object.keys(profiles[user.id] || {});
 
-const userProfiles = Object.keys(profiles[user.id] || {});
-const mutual = userProfiles.find(p => ownerLikes.includes(p));
+    const mutual = userProfiles.find(p => ownerLikes.includes(p));
 
-if (!mutual) {
-  return interaction.channel.send(`❤️ ${user.username} a liké ${profil.prenom}`);
-}
-
-
-    // DEBUG
-    console.log('LIKE:', user.id, '->', profil.ownerId);
-    console.log('LIKES:', likes);
-
-    // 💘 MATCH ?
-    const ownerLikes = likes[profil.ownerId] ?? [];
-    const isMatch = ownerLikes.includes(user.id);
-
-    if (!isMatch) {
-      return interaction.followUp(`❤️ ${user.username} a liké ${profil.prenom}`);
+    if (!mutual) {
+      return interaction.channel.send(`❤️ ${user.username} a liké ${profil.prenom}`);
     }
 
     // 💘 MATCH CONFIRMÉ
-    console.log('MATCH ENTRE', user.id, 'ET', profil.ownerId);
+    console.log('💘 MATCH ENTRE', user.id, 'ET', profil.ownerId);
 
-   const forum = interaction.guild.channels.cache.find(
-  c => c.type === 15 && c.name === '🫶-matchs'
-);
+    const forum = interaction.guild.channels.cache.find(
+      c => c.type === 15 && c.name === '🫶-matchs'
+    );
 
-if (!forum) {
-  return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+    if (!forum) {
+      return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+    }
+
+    const thread = await forum.threads.create({
+      name: `💘 ${user.username} x ${profil.prenom}`,
+      message: {
+        content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
+      },
+      autoArchiveDuration: 1440
+    });
+
+    await thread.permissionOverwrites.create(
+      interaction.guild.roles.everyone,
+      { ViewChannel: false }
+    );
+
+    await thread.permissionOverwrites.create(user.id, {
+      ViewChannel: true,
+      SendMessages: true
+    });
+
+    await thread.permissionOverwrites.create(profil.ownerId, {
+      ViewChannel: true,
+      SendMessages: true
+    });
+  });
 }
 
-const thread = await forum.threads.create({
-  name: `💘 ${user.username} x ${profil.prenom}`,
-  message: {
-    content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
-  },
-  autoArchiveDuration: 1440
-});
-}
-
-});
 
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
