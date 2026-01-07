@@ -220,3 +220,4 @@ return interaction.editReply('❌ Aucun profil.');
 
   }
 };
+}
