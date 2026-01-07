@@ -358,12 +358,15 @@ if (interaction.commandName === 'creerprofil') {
 
 // ===== PROFIL ALÉATOIRE =====
 if (interaction.commandName === 'profilaleatoire') {
+// ⏳ on ACK immédiatement l’interaction
+  await interaction.deferReply();
+
   const profil = getRandomProfile(interaction.channel.id);
   if (!profil) {
-    return interaction.reply('♻️ Tous les profils ont été vus.');
+    return interaction.editReply('♻️ Tous les profils ont été vus.');
   }
 
-  const msg = await interaction.reply({
+  const msg = await interaction.editReply({
     embeds: [profileEmbed(profil)],
     fetchReply: true
   });
