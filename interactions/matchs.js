@@ -1,46 +1,52 @@
 const { ChannelType } = require('discord.js');
-const { likes, profiles } = require('../utils/storage');
+const { likes, profiles, matchs } = require('../utils/storage');
 
 module.exports = async function handleMatch(interaction, user, profil) {
-  const ownerLikes = likes[profil.ownerId] || [];
-  const userProfiles = Object.keys(profiles[user.id] || {});
+  // sécurité
+  if (!interaction.guild) return;
 
-  // 🔁 Vérifier like mutuel
-  const mutual = userProfiles.find(p => ownerLikes.includes(p));
-  if (!mutual) return;
+  const ownerId = profil.ownerId;
+  const userId = user.id;
 
+  // likes du propriétaire du profil
+  const ownerLikes = likes[ownerId] || [];
+
+  // profils de l'utilisateur
+  const userProfiles = Object.keys(profiles[userId] || {});
+
+  // 🔁 LIKE MUTUEL ?
+  const mutualProfile = userProfiles.find(p => ownerLikes.includes(p));
+  if (!mutualProfile) return;
+
+  // 🛡️ empêcher les doublons de match
+  const matchKey = [userId, ownerId].sort().join('-');
+  matches ??= {};
+  if (matches[matchKey]) return;
+
+  // 💾 enregistrer le match
+  matches[matchKey] = true;
+
+  // 🔎 trouver le forum
   const forum = interaction.guild.channels.cache.find(
     c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
   );
 
   if (!forum) {
-    return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+    console.error('Forum 🫶-matchs introuvable');
+    return;
   }
 
-  // 🧵 Créer le thread
+  // 🧵 créer le thread (SANS permissions custom)
   const thread = await forum.threads.create({
     name: `💘 ${user.username} x ${profil.prenom}`,
+    autoArchiveDuration: 1440,
     message: {
-      content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
-    },
-    autoArchiveDuration: 1440
+      content: `💘 **MATCH !**\n\n${user} & <@${ownerId}>\n\n✨ Faites connaissance ici !`
+    }
   });
 
-  // 🔐 Permissions privées
-  await thread.permissionOverwrites.create(
-    interaction.guild.roles.everyone,
-    { ViewChannel: false }
+  // 🔔 notification dans le salon actuel
+  await interaction.channel.send(
+    `💘 **Match !** ${user} et <@${ownerId}> ont matché 🎉`
   );
-
-  await thread.permissionOverwrites.create(user.id, {
-    ViewChannel: true,
-    SendMessages: true
-  });
-
-  await thread.permissionOverwrites.create(profil.ownerId, {
-    ViewChannel: true,
-    SendMessages: true
-  });
-
-  interaction.channel.send(`💘 Match entre ${user} et ${profil.prenom} !`);
 };
