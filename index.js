@@ -78,8 +78,14 @@ function previewProfileEmbed(p) {
     .setDescription(
       `**Prénom :** ${p.prenom}\n` +
       `**Nom :** ${p.nom}\n` +
-      `**Âge :** ${p.age}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
+      `**Âge :** ${p.age}\n` +
+      `**Anniversaire :** ${p.anniversaire}\n\n` +
+      `**Quartier :** ${p.quartier}\n` +
+      `**Finances :** ${p.finances}\n\n` +
+      `**Situation :** ${p.situation}\n` +
+      `**Orientation :** ${p.orientation}\n` +
+      `**Recherche :** ${p.recherche}\n\n` +
       `**Description :**\n${p.description}`
     )
     .setImage(p.image)
@@ -212,12 +218,18 @@ client.on('interactionCreate', async interaction => {
     const dm = await interaction.user.createDM();
 
     const questions = [
-      ['prenom', 'Prénom ?'],
-      ['nom', 'Nom ?'],
-      ['sexe', 'Sexe ?'],
-      ['age', 'Âge ?'],
-      ['description', 'Description ?'],
-      ['image', 'Image (lien ou upload)']
+      ['prenom', 'Bienvenue dans la création de ton profil sur notre application SWIPE ! Pour commencer, dis nous ton 💬 Prénom ?'],
+      ['nom', 'Ainsi que ton 💬 Nom, ça permets aux utilisateurs de retrouver facilement ton profil'],
+      ['sexe', 'Maintenant, dis-moi sous quel 💬 Sexe te représentes-tu ?'],
+      ['age', 'Ainsi que ton 💬 Âge'],
+      ['anniversaire', 'Et quand devons-nous te souhaiter ton 💬 Anniversaire ?'],
+      ['quartier', 'Parfait ! Maintenant, nous allons passer à des détails importants, mais non obligatoire ! Commençons par 💬 où vis-tu ?'],
+      ['finances', 'Et ta 💬 situation financière ?'],
+      ['situation', 'Maintenant voici les informations nécessaire pour notre application, qul est ta 💬 Situation amoureuse ?'],
+      ['orientation', 'Et ce que tu préfères ? 💬 (Orientation sexuelle)'],
+      ['recherche', 'Pour aider les utilisateurs a en savoir plus, dis nous 💬 ce que tu recherches ?'],
+      ['description', 'Et maintenant, fais nous une 💬 description ! Tu peux mettre ce que tu veux pour accrocher des futurs prétendants !'],
+      ['image', 'Et on termine par une jolie photo de toi ! 🖼️ Image (lien ou upload)']
     ];
 
     let data = {}, step = 0;
