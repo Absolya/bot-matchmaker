@@ -387,10 +387,19 @@ if (interaction.commandName === 'profilaleatoire') {
     }
 
     // ❤️ LIKE
-    likes[user.id] ??= [];
-    if (!likes[user.id].includes(profil.ownerId)) {
-      likes[user.id].push(profil.ownerId);
-    }
+likes[user.id] ??= [];
+likes[user.id].push(profil.key);
+
+// Vérifier si le propriétaire du profil a liké un profil de l'utilisateur
+const ownerLikes = likes[profil.ownerId] || [];
+
+const userProfiles = Object.keys(profiles[user.id] || {});
+const mutual = userProfiles.find(p => ownerLikes.includes(p));
+
+if (!mutual) {
+  return interaction.channel.send(`❤️ ${user.username} a liké ${profil.prenom}`);
+}
+
 
     // DEBUG
     console.log('LIKE:', user.id, '->', profil.ownerId);
@@ -407,33 +416,21 @@ if (interaction.commandName === 'profilaleatoire') {
     // 💘 MATCH CONFIRMÉ
     console.log('MATCH ENTRE', user.id, 'ET', profil.ownerId);
 
-    const forum = interaction.guild.channels.cache.find(
-      c =>
-        c.type === ChannelType.GuildForum &&
-        c.name === '🫶-matchs'
-    );
+   const forum = interaction.guild.channels.cache.find(
+  c => c.type === 15 && c.name === '🫶-matchs'
+);
 
-    if (!forum) {
-      console.error('FORUM INTROUVABLE');
-      return interaction.followUp('❌ Le forum 🫶-matchs est introuvable.');
-    }
+if (!forum) {
+  return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+}
 
-    try {
-      await forum.threads.create({
-        name: `💘 ${user.username} x ${profil.prenom}`,
-        autoArchiveDuration: 1440,
-        type: ChannelType.PublicThread,
-        message: {
-          content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
-        }
-      });
-
-      await interaction.followUp('💘 Match créé avec succès !');
-    } catch (err) {
-      console.error('ERREUR THREAD:', err);
-      await interaction.followUp('❌ Erreur lors de la création du match.');
-    }
-  });
+const thread = await forum.threads.create({
+  name: `💘 ${user.username} x ${profil.prenom}`,
+  message: {
+    content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
+  },
+  autoArchiveDuration: 1440
+});
 }
 
 });
