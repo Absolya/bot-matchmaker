@@ -198,5 +198,5 @@ client.on('interactionCreate', async interaction => {
   } // <-- ferme if profilaleatoire
 }); // <-- ferme interactionCreate
 
-// ===== LOGIN =====
-client.login(process.env.TOKEN);
+// 🔑 CONNEXION AU BOT (OBLIGATOIRE)
+client.login(process.env.DISCORD_TOKEN);
