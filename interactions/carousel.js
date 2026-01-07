@@ -26,9 +26,10 @@ module.exports = async function carouselHandler(interaction) {
     );
 
     await interaction.editReply({
-      embeds: [profileEmbed(profil)],
-      components: [row]
-    });
+  embeds: [embed]
+});
+
+const msg = await interaction.fetchReply();
 
     return;
   }
