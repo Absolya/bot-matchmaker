@@ -213,48 +213,70 @@ client.on('interactionCreate', async interaction => {
   }
 
   // ===== CRÉER PROFIL =====
-  if (interaction.commandName === 'creerprofil') {
-    await interaction.reply({ content: '📩 Regarde tes MP', ephemeral: true });
-    const dm = await interaction.user.createDM();
+if (interaction.commandName === 'creerprofil') {
+  await interaction.reply({ content: '📩 Regarde tes MP', ephemeral: true });
+  const dm = await interaction.user.createDM();
 
-    const questions = [
-      ['prenom', 'Bienvenue dans la création de ton profil sur notre application SWIPE ! Pour commencer, dis nous ton 💬 Prénom ?'],
-      ['nom', 'Ainsi que ton 💬 Nom, ça permets aux utilisateurs de retrouver facilement ton profil'],
-      ['sexe', 'Maintenant, dis-moi sous quel 💬 Sexe te représentes-tu ?'],
-      ['age', 'Ainsi que ton 💬 Âge'],
-      ['anniversaire', 'Et quand devons-nous te souhaiter ton 💬 Anniversaire ?'],
-      ['quartier', 'Parfait ! Maintenant, nous allons passer à des détails importants, mais non obligatoire ! Commençons par 💬 où vis-tu ?'],
-      ['finances', 'Et ta 💬 situation financière ?'],
-      ['situation', 'Maintenant voici les informations nécessaire pour notre application, qul est ta 💬 Situation amoureuse ?'],
-      ['orientation', 'Et ce que tu préfères ? 💬 (Orientation sexuelle)'],
-      ['recherche', 'Pour aider les utilisateurs a en savoir plus, dis nous 💬 ce que tu recherches ?'],
-      ['description', 'Et maintenant, fais nous une 💬 description ! Tu peux mettre ce que tu veux pour accrocher des futurs prétendants !'],
-      ['image', 'Et on termine par une jolie photo de toi ! 🖼️ Image (lien ou upload)']
-    ];
+  const questions = [
+    ['prenom', 'Bienvenue dans la création de ton profil sur notre application SWIPE ! Pour commencer, dis nous ton 💬 Prénom ?'],
+    ['nom', 'Ainsi que ton 💬 Nom, ça permets aux utilisateurs de retrouver facilement ton profil'],
+    ['sexe', 'Maintenant, dis-moi sous quel 💬 Sexe te représentes-tu ?'],
+    ['age', 'Ainsi que ton 💬 Âge'],
+    ['anniversaire', 'Et quand devons-nous te souhaiter ton 💬 Anniversaire ?'],
+    ['quartier', 'Parfait ! Maintenant, nous allons passer à des détails importants, mais non obligatoire ! Commençons par 💬 où vis-tu ?'],
+    ['finances', 'Et ta 💬 situation financière ?'],
+    ['situation', 'Maintenant voici les informations nécessaire pour notre application, qul est ta 💬 Situation amoureuse ?'],
+    ['orientation', 'Et ce que tu préfères ? 💬 (Orientation sexuelle)'],
+    ['recherche', 'Pour aider les utilisateurs a en savoir plus, dis nous 💬 ce que tu recherches ?'],
+    ['description', 'Et maintenant, fais nous une 💬 description ! Tu peux mettre ce que tu veux pour accrocher des futurs prétendants !'],
+    ['image', 'Et on termine par une jolie photo de toi ! 🖼️ Image (lien ou upload)']
+  ];
 
-    let data = {}, step = 0;
-    await dm.send(questions[0][1]);
+  let data = {};
+  let step = 0;
 
-    const col = dm.createMessageCollector({ time: 300000 });
+  // Envoie la première question
+  await dm.send(questions[step][1]);
 
-    col.on('collect', async m => {
-      const key = questions[step][0];
-      data[key] = key === 'image' && m.attachments.size ? m.attachments.first().url : m.content;
-      step++;
+  const collector = dm.createMessageCollector({
+    filter: m => m.author.id === userId,
+    time: 10 * 60 * 1000 // 10 minutes
+  });
 
-      if (step < questions.length) {
-        await dm.send(questions[step][1]);
-      } else {
-        col.stop();
+  collector.on('collect', async m => {
+    let value = m.content;
 
-        profiles[userId] ??= {};
-        profiles[userId][`${data.prenom} ${data.nom}`] = data;
-        saveProfiles();
+    // Gestion image
+    if (questions[step][0] === 'image' && m.attachments.size > 0) {
+      value = m.attachments.first().url;
+    }
 
-        await dm.send('🎉 Profil créé !');
-      }
-    });
-  }
+    data[questions[step][0]] = value;
+    step++;
+
+    // Encore des questions
+    if (step < questions.length) {
+      await dm.send(questions[step][1]);
+    } 
+    // Fin du formulaire
+    else {
+      collector.stop();
+
+      profiles[userId] ??= {};
+      profiles[userId][`${data.prenom} ${data.nom}`] = data;
+      saveProfiles();
+
+      await dm.send('🎉 Ton profil a été créé avec succès !');
+    }
+  });
+
+  collector.on('end', (_, reason) => {
+    if (reason === 'time') {
+      dm.send('⏰ Temps écoulé. Tu peux relancer la création avec /creerprofil.');
+    }
+  });
+}
+
 
   // ===== PROFIL ALÉATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
