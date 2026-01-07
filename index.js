@@ -8,10 +8,10 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  Routes
+  Routes,
+  ChannelType
 } = require('discord.js');
 const fs = require('fs');
-const { ChannelType } = require('discord.js');
 
 // ===== CLIENT =====
 const client = new Client({
@@ -356,7 +356,7 @@ if (interaction.commandName === 'creerprofil') {
 }
 
 
- // ===== PROFIL ALÉATOIRE =====
+// ===== PROFIL ALÉATOIRE =====
 if (interaction.commandName === 'profilaleatoire') {
   const profil = getRandomProfile(interaction.channel.id);
   if (!profil) {
@@ -379,7 +379,6 @@ if (interaction.commandName === 'profilaleatoire') {
   });
 
   collector.on('collect', async (reaction, user) => {
-    // ❌ PASS
     if (reaction.emoji.name === '❌') {
       return msg.delete().catch(() => {});
     }
@@ -390,32 +389,50 @@ if (interaction.commandName === 'profilaleatoire') {
       likes[user.id].push(profil.ownerId);
     }
 
-    // 🔁 MATCH ?
-    const ownerLikes = likes[profil.ownerId] || [];
+    // DEBUG
+    console.log('LIKE:', user.id, '->', profil.ownerId);
+    console.log('LIKES:', likes);
+
+    // 💘 MATCH ?
+    const ownerLikes = likes[profil.ownerId] ?? [];
     const isMatch = ownerLikes.includes(user.id);
 
     if (!isMatch) {
       return interaction.followUp(`❤️ ${user.username} a liké ${profil.prenom}`);
     }
 
-    // 💘 MATCH → création du thread
+    // 💘 MATCH CONFIRMÉ
+    console.log('MATCH ENTRE', user.id, 'ET', profil.ownerId);
+
     const forum = interaction.guild.channels.cache.find(
-      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
+      c =>
+        c.type === ChannelType.GuildForum &&
+        c.name === '🫶-matchs'
     );
 
     if (!forum) {
+      console.error('FORUM INTROUVABLE');
       return interaction.followUp('❌ Le forum 🫶-matchs est introuvable.');
     }
 
-    await forum.threads.create({
-      name: `💘 ${user.username} x ${profil.prenom}`,
-      autoArchiveDuration: 1440,
-      message: {
-        content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
-      }
-    });
+    try {
+      await forum.threads.create({
+        name: `💘 ${user.username} x ${profil.prenom}`,
+        autoArchiveDuration: 1440,
+        type: ChannelType.PublicThread,
+        message: {
+          content: `💘 **MATCH !**\n\n${user} & <@${profil.ownerId}>`
+        }
+      });
+
+      await interaction.followUp('💘 Match créé avec succès !');
+    } catch (err) {
+      console.error('ERREUR THREAD:', err);
+      await interaction.followUp('❌ Erreur lors de la création du match.');
+    }
   });
 }
+
 });
 
 // ===== LOGIN =====
