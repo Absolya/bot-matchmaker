@@ -413,6 +413,7 @@ if (interaction.commandName === 'profilaleatoire') {
     });
   });
 }
+});
 
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
