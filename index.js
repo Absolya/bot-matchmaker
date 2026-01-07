@@ -49,7 +49,7 @@ const commands = [
   new SlashCommandBuilder().setName('creerprofil').setDescription('Créer un profil'),
   new SlashCommandBuilder().setName('voirprofils').setDescription('Voir tous les profils'),
   new SlashCommandBuilder().setName('mesprofils').setDescription('Voir et gérer tes profils'),
-  new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire')
+  new SlashCommandBuilder().setName('profilaleatoire').setDescription('Voir un profil aléatoire'),
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -138,6 +138,10 @@ client.on('interactionCreate', async interaction => {
           .setLabel('🗑️ Supprimer')
           .setStyle(ButtonStyle.Danger),
         new ButtonBuilder()
+          .setCustomId('edit')
+            .setLabel('✏️ Modifier')
+           .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
           .setCustomId('next')
           .setLabel('➡️')
           .setStyle(ButtonStyle.Secondary)
@@ -154,6 +158,85 @@ client.on('interactionCreate', async interaction => {
     const collector = msg.createMessageComponentCollector({ time: 300000 });
 
     collector.on('collect', async i => {
+
+      if (i.customId === 'edit') {
+  return i.reply({
+    content: '✏️ Quel champ veux-tu modifier ?',
+    ephemeral: true,
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('edit_prenom')
+          .setLabel('Prénom')
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId('edit_age')
+          .setLabel('Âge')
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId('edit_description')
+          .setLabel('Description')
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId('edit_image')
+          .setLabel('Image')
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId('cancel_edit')
+          .setLabel('Annuler')
+          .setStyle(ButtonStyle.Danger)
+      )
+    ]
+  });
+}
+
+const editableFields = {
+  edit_prenom: 'prenom',
+  edit_age: 'age',
+  edit_description: 'description',
+  edit_image: 'image'
+};
+
+if (editableFields[i.customId]) {
+  const field = editableFields[i.customId];
+
+  await i.reply({
+    content: `✏️ Envoie la nouvelle valeur pour **${field}**`,
+    ephemeral: true
+  });
+
+  const dm = await i.user.createDM();
+
+  const msgCollector = dm.createMessageCollector({
+    filter: m => m.author.id === userId,
+    max: 1,
+    time: 120000
+  });
+
+  msgCollector.on('collect', async m => {
+    const newValue =
+      field === 'image' && m.attachments.size
+        ? m.attachments.first().url
+        : m.content;
+
+    profiles[userId][userProfiles[index].key][field] = newValue;
+    saveProfiles();
+
+    await dm.send('✅ Profil mis à jour avec succès !');
+  });
+}
+
+if (i.customId === 'cancel_edit') {
+  return i.update({
+    content: '❌ Modification annulée.',
+    components: []
+  });
+}
+
       if (i.user.id !== userId) return;
 
       if (i.customId === 'next') index++;
