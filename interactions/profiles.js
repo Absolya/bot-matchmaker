@@ -44,18 +44,17 @@ if (interaction.commandName === 'creerprofil') {
   const userId = interaction.user.id;
   
   const questions = [
-    ['prenom', '💬 Prénom ?'],
-    ['nom', '💬 Nom ?'],
-    ['sexe', '💬 Sexe ?'],
-    ['age', '💬 Âge ?'],
-    ['anniversaire', '💬 Anniversaire ?'],
-    ['quartier', '💬 Quartier ?'],
-    ['finances', '💬 Situation financière ?'],
-    ['situation', '💬 Situation amoureuse ?'],
-    ['orientation', '💬 Orientation sexuelle ?'],
-    ['recherche', '💬 Que recherches-tu ?'],
-    ['description', '💬 Description'],
-    ['image', '🖼️ Image (lien ou upload)']
+    ['fullname', 'Bienvenue dans la création de ton profil sur SWIPE ! /n Pour commencer, nous aurions besoin de connaitre ton 💬 prénom et ton nom ! (ex : Alex Martin)'],
+    ['sexe', 'Très bien ! Maintenant donne moi ton 💬 sexe ?'],
+    ['age', 'Mais également ton 💬 âge ?'],
+    ['anniversaire', 'Et quand devons nous te souhaiter ton 💬 Anniversaire ?'],
+    ['quartier', 'Maintenant, pour que tes futurs crush savent où te donner un rendez-vous, dis-nous dans quel 💬 quartier tu habites ?'],
+    ['finances', 'Une petite information qui peut en intéresser certain, mais dis nous quel est ta 💬 situation financière ?'],
+    ['situation', 'Passons aux informations qui sont vraiment importante sur SWIPE ! Alors pour commencer, quel est ta 💬 situation amoureuse ?'],
+    ['orientation', 'Et que cherches-tu exactement ? Enfin, pour être assez clair, quel est ton 💬 orientation sexuelle ?'],
+    ['recherche', 'De nouveau, une information importante pour les potentiels crushs ! 💬 Que recherches-tu sur Swipe ? Quelque chose de sérieux ? Une soirée chaude ou a voir au feeling ?'],
+    ['description', 'Enfin, donne nous une petite 💬 description, et oublie, une bonne accroche pour intéresser un max de personnes, ou la bonne personne !'],
+    ['image', 'Et pour finir, nous aurions besoin de la plus belle 🖼️ photo de toi (lien ou upload)']
   ];
 
   const data = {};
@@ -93,11 +92,17 @@ for (const [key, question] of questions) {
 
   const msg = result.first();
 
-  if (key === 'image' && msg.attachments.size > 0) {
-    data[key] = msg.attachments.first().url;
-  } else {
-    data[key] = msg.content;
-  }
+  if (key === 'fullname') {
+  const parts = msg.content.trim().split(/\s+/);
+
+  data.prenom = parts.shift();          // premier mot
+  data.nom = parts.join(' ') || '';     // le reste (peut être vide)
+} 
+else if (key === 'image' && msg.attachments.size > 0) {
+  data[key] = msg.attachments.first().url;
+} 
+else {
+  data[key] = msg.content;
 }
 
 
