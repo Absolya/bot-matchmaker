@@ -366,7 +366,7 @@ if (interaction.commandName === 'profilaleatoire') {
     fetchReply: true
   });
 
-  // Réactions
+  // ✅ RÉACTIONS (LIGNE MANQUANTE CORRIGÉE)
   await msg.react('❤️');
   await msg.react('❌');
 
@@ -389,7 +389,6 @@ if (interaction.commandName === 'profilaleatoire') {
 
     const ownerLikes = likes[profil.ownerId] || [];
     const userProfiles = Object.keys(profiles[user.id] || {});
-
     const mutual = userProfiles.find(p => ownerLikes.includes(p));
 
     if (!mutual) {
@@ -414,7 +413,6 @@ if (interaction.commandName === 'profilaleatoire') {
     });
   });
 }
-
 
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
