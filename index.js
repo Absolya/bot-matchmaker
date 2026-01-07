@@ -440,3 +440,13 @@ if (interaction.commandName === 'profilaleatoire') {
 
 // ===== LOGIN =====
 client.login(process.env.DISCORD_TOKEN);
+
+// ===== KEEP ALIVE POUR RENDER =====
+const http = require('http');
+
+http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Bot Discord actif 🚀');
+}).listen(process.env.PORT || 3000, () => {
+  console.log('🌐 Serveur HTTP actif pour Render');
+});
