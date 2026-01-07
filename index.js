@@ -5,6 +5,9 @@ const {
   EmbedBuilder,
   SlashCommandBuilder,
   REST,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
   Routes,
   ChannelType
 } = require('discord.js');
@@ -85,6 +88,27 @@ function profileEmbed(p) {
     .setImage(p.image)
     .setFooter({ text: `Profil : ${p.key}` })
     .setColor(0xff69b4);
+
+    function previewProfileEmbed(p) {
+  return new EmbedBuilder()
+    .setTitle('👀 Prévisualisation de ton profil')
+    .setDescription(
+      `**Prénom :** ${p.prenom}\n` +
+      `**Nom :** ${p.nom}\n` +
+      `**Âge :** ${p.age}\n` +
+      `**Anniversaire :** ${p.anniversaire}\n` +
+      `**Sexe :** ${p.sexe}\n\n` +
+      `**Quartier :** ${p.quartier}\n` +
+      `**Finances :** ${p.finances}\n\n` +
+      `**Situation :** ${p.situation}\n` +
+      `**Orientation :** ${p.orientation}\n` +
+      `**Recherche :** ${p.recherche}\n\n` +
+      `**Description :**\n${p.description}`
+    )
+    .setImage(p.image)
+    .setColor(0x00ffcc)
+    .setFooter({ text: 'Confirme ou modifie ton profil 👇' });
+}
 }
 
 // ===== RANDOM =====
@@ -137,14 +161,56 @@ client.on('interactionCreate', async interaction => {
       step++;
       if (step < questions.length) dm.send(questions[step][1]);
       else {
-        col.stop();
-        profiles[userId] ??= {};
-        profiles[userId][`${data.prenom} ${data.nom}`] = data;
-        saveProfiles();
-        dm.send(`✅ Profil **${data.prenom} ${data.nom}** créé`);
-      }
-    });
-  }
+  col.stop();
+
+  const previewMsg = await dm.send({
+    embeds: [previewProfileEmbed(data)],
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('confirm_profile')
+          .setLabel('✅ Publier')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId('edit_profile')
+          .setLabel('✏️ Modifier')
+          .setStyle(ButtonStyle.Secondary)
+      )
+    ]
+  });
+
+  const buttonCollector = previewMsg.createMessageComponentCollector({
+    time: 120000
+  });
+
+  buttonCollector.on('collect', async i => {
+    if (i.user.id !== userId) {
+      return i.reply({ content: '❌ Ce bouton ne t’est pas destiné', ephemeral: true });
+    }
+
+    // ✅ CONFIRMATION
+    if (i.customId === 'confirm_profile') {
+      profiles[userId] ??= {};
+      profiles[userId][`${data.prenom} ${data.nom}`] = data;
+      saveProfiles();
+
+      await i.update({
+        content: '🎉 Profil publié avec succès !',
+        embeds: [],
+        components: []
+      });
+    }
+
+    // ✏️ MODIFICATION
+    if (i.customId === 'edit_profile') {
+      await i.update({
+        content: '✏️ D’accord, on recommence la création du profil.',
+        embeds: [],
+        components: []
+      });
+    }
+  });
+}
 
   // ===== PROFIL ALEATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
