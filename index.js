@@ -275,18 +275,16 @@ if (interaction.commandName === 'creerprofil') {
   let data = {};
   let step = 0;
 
-  // Envoie la première question
   await dm.send(questions[step][1]);
 
   const collector = dm.createMessageCollector({
     filter: m => m.author.id === userId,
-    time: 10 * 60 * 1000 // 10 minutes
+    time: 10 * 60 * 1000
   });
 
   collector.on('collect', async m => {
     let value = m.content;
 
-    // Gestion image
     if (questions[step][0] === 'image' && m.attachments.size > 0) {
       value = m.attachments.first().url;
     }
@@ -294,62 +292,66 @@ if (interaction.commandName === 'creerprofil') {
     data[questions[step][0]] = value;
     step++;
 
-    // Encore des questions
     if (step < questions.length) {
       await dm.send(questions[step][1]);
-    } 
-    // Fin du formulaire
-    else {
-  col.stop();
+    } else {
+      collector.stop();
 
-  const previewMsg = await dm.send({
-    embeds: [previewProfileEmbed(data)],
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('confirm_profile')
-          .setLabel('✅ Publier')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId('edit_profile')
-          .setLabel('✏️ Modifier')
-          .setStyle(ButtonStyle.Secondary)
-      )
-    ]
-  });
+      const previewMsg = await dm.send({
+        embeds: [previewProfileEmbed(data)],
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId('confirm_profile')
+              .setLabel('✅ Publier')
+              .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+              .setCustomId('edit_profile')
+              .setLabel('✏️ Modifier')
+              .setStyle(ButtonStyle.Secondary)
+          )
+        ]
+      });
 
-  const buttonCollector = previewMsg.createMessageComponentCollector({
-    time: 120000
-  });
+      const buttonCollector = previewMsg.createMessageComponentCollector({
+        time: 120000
+      });
 
-  buttonCollector.on('collect', async i => {
-    if (i.user.id !== userId) {
-      return i.reply({ content: '❌ Ce bouton ne t’est pas destiné', ephemeral: true });
-    }
+      buttonCollector.on('collect', async i => {
+        if (i.user.id !== userId) {
+          return i.reply({ content: '❌ Ce bouton ne t’est pas destiné', ephemeral: true });
+        }
 
-    // ✅ CONFIRMATION
-    if (i.customId === 'confirm_profile') {
-      profiles[userId] ??= {};
-      profiles[userId][`${data.prenom} ${data.nom}`] = data;
-      saveProfiles();
+        if (i.customId === 'confirm_profile') {
+          profiles[userId] ??= {};
+          profiles[userId][`${data.prenom} ${data.nom}`] = data;
+          saveProfiles();
 
-      await i.update({
-        content: '🎉 Profil publié avec succès !',
-        embeds: [],
-        components: []
+          await i.update({
+            content: '🎉 Profil publié avec succès !',
+            embeds: [],
+            components: []
+          });
+        }
+
+        if (i.customId === 'edit_profile') {
+          await i.update({
+            content: '✏️ D’accord, on recommence la création du profil.',
+            embeds: [],
+            components: []
+          });
+        }
       });
     }
+  });
 
-    // ✏️ MODIFICATION
-    if (i.customId === 'edit_profile') {
-      await i.update({
-        content: '✏️ D’accord, on recommence la création du profil.',
-        embeds: [],
-        components: []
-      });
+  collector.on('end', (_, reason) => {
+    if (reason === 'time') {
+      dm.send('⏰ Temps écoulé. Tu peux relancer avec /creerprofil.');
     }
   });
 }
+
 
   // ===== PROFIL ALÉATOIRE =====
   if (interaction.commandName === 'profilaleatoire') {
