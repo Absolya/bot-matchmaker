@@ -68,7 +68,17 @@ const row = new ActionRowBuilder().addComponents(
     const parts = interaction.customId.split(':');
 
 const ownerId = parts[1];
-const characterRaw = parts[2]; // 👈 TOUJOURS ici
+
+// 🔐 on récupère la partie qui n'est PAS un timestamp
+const characterRaw = parts.find(
+  p => p !== 'create_match' && p !== ownerId && !/^\d+$/.test(p)
+);
+
+if (!characterRaw) {
+  await interaction.channel.send('❌ Impossible de déterminer le personnage.');
+  return;
+}
+
 const characterName = characterRaw.replace(/_/g, ' ');
 
 
