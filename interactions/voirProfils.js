@@ -63,26 +63,30 @@ module.exports = async function voirProfilsHandler(interaction) {
   });
 
   collector.on('collect', async i => {
-    if (i.user.id !== interaction.user.id) {
-      return i.reply({
-        content: '❌ Ce menu ne t’est pas destiné.',
-        ephemeral: true
-      });
-    }
-
-    if (i.customId === 'voirprofils_next') index++;
-    if (i.customId === 'voirprofils_prev') index--;
-
-    // 🔄 Mise à jour du profil affiché
-    await i.update({
-      embeds: [profileEmbed(allProfiles[index])],
-      components: [getRow(allProfiles[index])]
+  if (i.user.id !== interaction.user.id) {
+    return i.reply({
+      content: '❌ Ce menu ne t’est pas destiné.',
+      ephemeral: true
     });
+  }
 
-    // 🔁 Mise à jour du pending match
-    pendingMatches.set(message.id, {
-      ownerId: allProfiles[index].ownerId,
-      characterName: `${allProfiles[index].prenom} ${allProfiles[index].nom}`
-    });
+  // 💘 Le bouton match est géré ailleurs (carousel)
+  if (i.customId === 'create_match') {
+    return; // ⛔ on ne touche PAS à l'interaction
+  }
+
+  if (i.customId === 'voirprofils_next') index++;
+  if (i.customId === 'voirprofils_prev') index--;
+
+  await i.update({
+    embeds: [profileEmbed(allProfiles[index])],
+    components: [getRow(allProfiles[index])]
   });
+
+  pendingMatches.set(message.id, {
+    ownerId: allProfiles[index].ownerId,
+    characterName: `${allProfiles[index].prenom} ${allProfiles[index].nom}`
+  });
+});
+
 };
