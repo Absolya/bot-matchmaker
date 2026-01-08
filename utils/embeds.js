@@ -5,11 +5,9 @@ function profileEmbed(p) {
     .setTitle(`💘 ${p.prenom} ${p.nom}`)
     .setDescription(
       `**Âge :** ${p.age}\n` +
-      `**Anniversaire :** ${p.anniversaire}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
 
       `**Quartier :** ${p.quartier}\n` +
-      `**Finances :** ${p.finances}\n\n` +
 
       `**Situation :** ${p.situation}\n` +
       `**Orientation :** ${p.orientation}\n` +
@@ -29,11 +27,9 @@ function previewProfileEmbed(p) {
       `**Nom :** ${p.nom}\n\n` +
 
       `**Âge :** ${p.age}\n` +
-      `**Anniversaire :** ${p.anniversaire}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
 
       `**Quartier :** ${p.quartier}\n` +
-      `**Finances :** ${p.finances}\n\n` +
 
       `**Situation :** ${p.situation}\n` +
       `**Orientation :** ${p.orientation}\n` +

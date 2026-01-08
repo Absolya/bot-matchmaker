@@ -151,6 +151,10 @@ module.exports = async function profilesHandler(interaction) {
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('prev').setLabel('⬅️').setStyle(ButtonStyle.Secondary).setDisabled(index === 0),
         new ButtonBuilder().setCustomId('delete').setLabel('🗑️').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+      .setCustomId('edit_profile')
+      .setLabel('✏️ Éditer')
+      .setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('next').setLabel('➡️').setStyle(ButtonStyle.Secondary).setDisabled(index === userProfiles.length - 1)
       );
 
@@ -164,6 +168,78 @@ module.exports = async function profilesHandler(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 300000 });
 
     collector.on('collect', async i => {
+
+      if (i.customId === 'edit_profile') {
+  await i.reply({
+    ephemeral: true,
+    content:
+      '✏️ **Quel champ veux-tu modifier ?**\n\n' +
+      'Réponds par l’un des mots suivants :\n' +
+      '`prenom`, `nom`, `age`, `situation`, `orientation`, `description`, `image`'
+  });
+
+  const dm = await i.user.createDM();
+
+  // attendre le champ
+  const fieldCollected = await dm.awaitMessages({
+    max: 1,
+    time: 120000,
+    filter: m => m.author.id === i.user.id
+  }).catch(() => null);
+
+  if (!fieldCollected) {
+    return dm.send('⏰ Temps écoulé.');
+  }
+
+  const field = fieldCollected.first().content.toLowerCase();
+
+  const allowedFields = [
+    'prenom',
+    'nom',
+    'age',
+    'situation',
+    'orientation',
+    'description',
+    'image'
+  ];
+
+  if (!allowedFields.includes(field)) {
+    return dm.send('❌ Champ invalide.');
+  }
+
+  await dm.send(`✏️ Envoie maintenant la **nouvelle valeur** pour **${field}**`);
+
+  const valueCollected = await dm.awaitMessages({
+    max: 1,
+    time: 120000,
+    filter: m => m.author.id === i.user.id
+  }).catch(() => null);
+
+  if (!valueCollected) {
+    return dm.send('⏰ Temps écoulé.');
+  }
+
+  const valueMsg = valueCollected.first();
+
+  userProfiles[index][field] =
+    field === 'image' && valueMsg.attachments.size
+      ? valueMsg.attachments.first().url
+      : valueMsg.content;
+
+  // sauvegarde
+  profiles[userId][userProfiles[index].key] = userProfiles[index];
+  saveProfiles();
+
+  await dm.send('✅ Profil mis à jour avec succès !');
+
+  // mise à jour de l’embed
+  await i.message.edit({
+    embeds: [profileEmbed(userProfiles[index])],
+    components: [row()]
+  });
+
+  return;
+}
       if (i.user.id !== userId) return;
 
       if (i.customId === 'next') index++;
