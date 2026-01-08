@@ -53,7 +53,9 @@ if (interaction.replied || interaction.deferred) return;
 
 // ❌ Passer
 if (interaction.customId === 'next_profile') {
+if (!interaction.deferred && !interaction.replied) {
   await interaction.deferUpdate();
+}
   await interaction.channel.send('/profilaleatoire');
   return;
 }
@@ -63,7 +65,10 @@ if (interaction.customId.startsWith('create_match:')) {
   const ownerId = interaction.customId.split(':')[1];
   const userId = interaction.user.id;
 
-  await interaction.deferUpdate(); // ✅ UNE SEULE FOIS
+if (!interaction.deferred && !interaction.replied) {
+  await interaction.deferUpdate();
+}
+} // ✅ UNE SEULE FOIS
 
   if (ownerId === userId) {
     await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
@@ -94,8 +99,9 @@ const matchedMember = await interaction.guild.members.fetch(ownerId);
   const userId = interaction.user.id;
 
   // ACK du bouton (OBLIGATOIRE)
+if (!interaction.deferred && !interaction.replied) {
   await interaction.deferUpdate();
-
+}
   // sécurité
   if (ownerId === userId) {
     await interaction.channel.send('❌ Tu ne peux pas créer un match avec toi-même.');
@@ -138,7 +144,9 @@ if (interaction.customId.startsWith('accept_match:')) {
   const requesterId = interaction.customId.split(':')[1]; // A
   const accepterId = interaction.user.id;                  // B
 
-  await interaction.deferUpdate(); // ACK bouton
+ if (!interaction.deferred && !interaction.replied) {
+  await interaction.deferUpdate();
+}; // ACK bouton
 
   const guild = interaction.guild || interaction.client.guilds.cache.first();
 
@@ -177,7 +185,9 @@ if (interaction.customId.startsWith('accept_match:')) {
 if (interaction.customId.startsWith('decline_match:')) {
   const requesterId = interaction.customId.split(':')[1];
 
-  await interaction.deferUpdate(); // ACK bouton
+if (!interaction.deferred && !interaction.replied) {
+  await interaction.deferUpdate();
+} // ACK bouton
 
   const guild = interaction.guild || interaction.client.guilds.cache.first();
   const requester = await guild.members.fetch(requesterId);
