@@ -1,7 +1,3 @@
-const pendingMatches = new Map();
-// key: interaction.message.id
-// value: { ownerId, characterName }
-
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -28,22 +24,11 @@ module.exports = async function carouselHandler(interaction) {
       return;
     }
 
-    const message = await interaction.editReply({
-  embeds: [profileEmbed(profil)],
-  components: [row],
-  fetchReply: true
-});
-
-pendingMatches.set(message.id, {
-  ownerId: profil.ownerId,
-  characterName: `${profil.prenom} ${profil.nom}`
-});
-
     const guildId = interaction.guild.id;
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-     .setCustomId('create_match')
+    .setCustomId(`create_match:${profil.ownerId}:${Date.now()}`)
     .setLabel('💘 Créer un match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
@@ -79,69 +64,55 @@ const row = new ActionRowBuilder().addComponents(
   // =========================
   // 💘 DEMANDE DE MATCH
   // =========================
-  if (interaction.customId === 'create_match') {
+  if (interaction.customId.startsWith('create_match:')) {
+    const ownerId = interaction.customId.split(':')[1];
+    const userId = interaction.user.id;
 
-  const matchData = pendingMatches.get(interaction.message.id);
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
 
-  if (!matchData) {
-    await interaction.channel.send('❌ Impossible de retrouver le profil.');
+    if (ownerId === userId) {
+      await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
+      return;
+    }
+
+    const matchedMember = await interaction.guild.members.fetch(ownerId);
+
+   const guildId = interaction.guild.id;
+
+const row = new ActionRowBuilder().addComponents(
+  new ButtonBuilder()
+    .setCustomId(`accept_match:${userId}:${guildId}`)
+    .setLabel('💘 Accepter le match')
+    .setStyle(ButtonStyle.Success),
+  new ButtonBuilder()
+    .setCustomId(`decline_match:${userId}:${guildId}`)
+    .setLabel('❌ Refuser')
+    .setStyle(ButtonStyle.Secondary)
+);
+
+
+    await matchedMember.send({
+      content:
+        `💌 **Demande de match RP**\n\n` +
+        `${interaction.user} souhaite ouvrir un match RP avec toi.\n\n` +
+        `Souhaites-tu accepter ?`,
+      components: [row]
+    });
+
+    await interaction.channel.send(
+      `📨 Demande envoyée à **${matchedMember.user.username}**…`
+    );
+
     return;
   }
-
-  const { ownerId, characterName } = matchData;
-  const userId = interaction.user.id;
-
-  if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferUpdate();
-  }
-
-  if (ownerId === userId) {
-    await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
-    return;
-  }
-
-  const matchedMember = await interaction.guild.members.fetch(ownerId);
-  const guildId = interaction.guild.id;
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`accept_match:${userId}:${guildId}`)
-      .setLabel('💘 Accepter le match')
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId(`decline_match:${userId}:${guildId}`)
-      .setLabel('❌ Refuser')
-      .setStyle(ButtonStyle.Secondary)
-  );
-
-  await matchedMember.send({
-    content:
-      `💌 **Demande de match RP**\n\n` +
-      `🧑‍🎭 **Personnage : ${characterName}**\n\n` +
-      `${interaction.user} souhaite ouvrir un match RP avec ce personnage.\n\n` +
-      `Souhaites-tu accepter ?`,
-    components: [row]
-  });
-
-  await interaction.channel.send(
-    `📨 Demande envoyée à **${matchedMember.user.username}**…`
-  );
-
-  return;
-}
-
 
   // =========================
   // ✅ ACCEPTATION DU MATCH
   // =========================
   if (interaction.customId.startsWith('accept_match:')) {
- const parts = interaction.customId.split(':');
-
-const requesterId = parts[1];
-const guildId = parts[2];
-const characterRaw = parts[3];
-const characterName = characterRaw.replace(/_/g, ' ');
-
+  const [, requesterId, guildId] = interaction.customId.split(':');
 
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferUpdate();
@@ -175,14 +146,13 @@ const characterName = characterRaw.replace(/_/g, ' ');
   matchs[matchKey] = true;
 
   await forum.threads.create({
-    name: `💘 ${characterName} x ${accepter.user.username}`,
+    name: `💘 ${requester.user.username} x ${accepter.user.username}`,
     autoArchiveDuration: 1440,
     message: {
       content:
-  `💘 **MATCH CONFIRMÉ !**\n\n` +
-  `🧑‍🎭 **${characterName}**\n` +
-  `${requester} & ${accepter}\n\n` +
-  `✨ À vous de jouer 💬`
+        `💘 **MATCH CONFIRMÉ !**\n\n` +
+        `${requester} & ${accepter}\n\n` +
+        `✨ À vous de jouer 💬`
     }
   });
 
