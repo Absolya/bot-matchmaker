@@ -28,7 +28,7 @@ module.exports = async function carouselHandler(interaction) {
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-    .setCustomId(`create_match:${profil.ownerId}:${Date.now()}`)
+    .setCustomId(`create_match:${profil.ownerId}:${profil.prenom}_${profil.nom}:${Date.now()}`)
     .setLabel('💘 Créer un match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
@@ -65,7 +65,8 @@ const row = new ActionRowBuilder().addComponents(
   // 💘 DEMANDE DE MATCH
   // =========================
   if (interaction.customId.startsWith('create_match:')) {
-    const ownerId = interaction.customId.split(':')[1];
+    const [, ownerId, characterRaw] = interaction.customId.split(':');
+const characterName = characterRaw.replace('_', ' ');
     const userId = interaction.user.id;
 
     if (!interaction.deferred && !interaction.replied) {
@@ -94,12 +95,13 @@ const row = new ActionRowBuilder().addComponents(
 
 
     await matchedMember.send({
-      content:
-        `💌 **Demande de match RP**\n\n` +
-        `${interaction.user} souhaite ouvrir un match RP avec toi.\n\n` +
-        `Souhaites-tu accepter ?`,
-      components: [row]
-    });
+  content:
+    `💌 **Demande de match RP**\n\n` +
+    `🧑‍🎭 **Personnage : ${characterName}**\n\n` +
+    `${interaction.user} souhaite ouvrir un match RP avec ce personnage.\n\n` +
+    `Souhaites-tu accepter ?`,
+  components: [row]
+});
 
     await interaction.channel.send(
       `📨 Demande envoyée à **${matchedMember.user.username}**…`
@@ -146,7 +148,7 @@ const row = new ActionRowBuilder().addComponents(
   matchs[matchKey] = true;
 
   await forum.threads.create({
-    name: `💘 ${requester.user.username} x ${accepter.user.username}`,
+    name: `💘 ${characterName} x ${accepter.user.username}`,
     autoArchiveDuration: 1440,
     message: {
       content:
