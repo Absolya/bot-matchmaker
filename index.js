@@ -54,26 +54,39 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 // ===== INTERACTIONS (ROUTER) =====
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
 
-  const command = interaction.commandName;
+  // =========================
+  // SLASH COMMANDS
+  // =========================
+  if (interaction.isChatInputCommand()) {
+    const command = interaction.commandName;
 
-  // 👤 PROFILS
-  if (['creerprofil', 'mesprofils', 'annulerprofil'].includes(command)) {
-    return profilesHandler(interaction);
+    // 👤 PROFILS
+    if (['creerprofil', 'mesprofils', 'annulerprofil'].includes(command)) {
+      return profilesHandler(interaction);
+    }
+
+    // 🎴 CAROUSEL
+    if (command === 'profilaleatoire') {
+      return carouselHandler(interaction);
+    }
+
+    // ❌ inconnue
+    return interaction.reply({
+      content: '❌ Commande non prise en charge.',
+      ephemeral: true
+    });
   }
 
-  // 🎴 CAROUSEL
-  if (command === 'profilaleatoire') {
+  // =========================
+  // BOUTONS
+  // =========================
+  if (interaction.isButton()) {
+    // 👉 UNIQUEMENT le carousel gère ses boutons
     return carouselHandler(interaction);
   }
-
-  // 🛡️ SÉCURITÉ (au cas où)
-  await interaction.reply({
-    content: '❌ Commande non prise en charge.',
-    ephemeral: true
-  });
 });
+
 
 // ===== KEEP ALIVE (RENDER) =====
 const http = require('http');

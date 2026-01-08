@@ -43,34 +43,32 @@ module.exports = async function carouselHandler(interaction) {
     return;
   }
 
-  // =========================
-  // Boutons
-  // =========================
-  if (!interaction.isButton()) return;
+ // =========================
+// BOUTONS
+// =========================
+if (!interaction.isButton()) return;
 
-  // ❌ Passer
-  if (interaction.customId === 'next_profile') {
-    await interaction.deferUpdate();
-    await interaction.channel.send('/profilaleatoire');
-    return;
-  }
+// ⚠️ IMPORTANT : STOP ici si déjà répondu
+if (interaction.replied || interaction.deferred) return;
+
+// ❌ Passer
+if (interaction.customId === 'next_profile') {
+  await interaction.deferUpdate();
+  await interaction.channel.send('/profilaleatoire');
+  return;
+}
 
 // 💘 Créer un match
 if (interaction.customId.startsWith('create_match:')) {
   const ownerId = interaction.customId.split(':')[1];
   const userId = interaction.user.id;
 
-  // 🔒 auto-match interdit
+  await interaction.deferUpdate(); // ✅ UNE SEULE FOIS
+
   if (ownerId === userId) {
-    await interaction.reply({
-      content: '❌ Tu ne peux pas créer un match avec toi-même.',
-      ephemeral: true
-    });
+    await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
     return;
   }
-
-  // ✅ ACK CORRECT POUR UN BOUTON
-  await interaction.deferUpdate();
 
   const forum = interaction.guild.channels.cache.find(
     c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
@@ -82,9 +80,8 @@ if (interaction.customId.startsWith('create_match:')) {
   }
 
   const matchKey = [userId, ownerId].sort().join('-');
-
   if (matchs[matchKey]) {
-    await interaction.channel.send('⚠️ Un match existe déjà.');
+    await interaction.channel.send('⚠️ Match déjà existant.');
     return;
   }
 
@@ -98,7 +95,6 @@ if (interaction.customId.startsWith('create_match:')) {
     }
   });
 
-  // 🔔 feedback (PAS via interaction.reply)
   await interaction.channel.send(
     `💘 Match créé entre ${interaction.user} et <@${ownerId}> !`
   );
