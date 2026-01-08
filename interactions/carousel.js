@@ -87,8 +87,10 @@ if (interaction.customId.startsWith('create_match:')) {
 
   matchs[matchKey] = true;
 
+const matchedMember = await interaction.guild.members.fetch(ownerId);
+
   await forum.threads.create({
-    name: `💘 ${interaction.user.username} x <@${ownerId}>`,
+    name: `💘 ${interaction.user.username} x ${matchedMember.user.username}`,
     autoArchiveDuration: 1440,
     message: {
       content: `💘 **MATCH !**\n\n${interaction.user} & <@${ownerId}>\n\n✨ Faites connaissance ici !`
