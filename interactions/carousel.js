@@ -28,11 +28,11 @@ module.exports = async function carouselHandler(interaction) {
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-    .setCustomId(`accept_match:${userId}:${guildId}`)
+    .setCustomId(`create_match:${profil.ownerId}`)
     .setLabel('💘 Accepter le match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
-    .setCustomId(`decline_match:${userId}:${guildId}`)
+    .setCustomId(`create_match:${profil.ownerId}`)
     .setLabel('❌ Refuser')
     .setStyle(ButtonStyle.Secondary)
 );
@@ -114,8 +114,16 @@ const row = new ActionRowBuilder().addComponents(
     await interaction.deferUpdate();
   }
 
-  // 🔁 récupérer le serveur depuis l'ID
-  const guild = await interaction.client.guilds.fetch(guildId);
+  // ✅ RÉCUPÉRATION SAFE DE LA GUILD
+  let guild = interaction.client.guilds.cache.get(guildId);
+  if (!guild) {
+    guild = await interaction.client.guilds.fetch(guildId);
+  }
+
+  if (!guild) {
+    await interaction.user.send('❌ Impossible de retrouver le serveur du match.');
+    return;
+  }
 
   const requester = await guild.members.fetch(requesterId);
   const accepter = await guild.members.fetch(interaction.user.id);
@@ -151,22 +159,28 @@ const row = new ActionRowBuilder().addComponents(
 }
 
 
+
   // =========================
   // ❌ REFUS DU MATCH
   // =========================
   if (interaction.customId.startsWith('decline_match:')) {
-    const requesterId = interaction.customId.split(':')[1];
+  const [, requesterId, guildId] = interaction.customId.split(':');
 
-    if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferUpdate();
-    }
-
-    const guild = interaction.guild;
-    const requester = await guild.members.fetch(requesterId);
-
-    await interaction.user.send('❌ Tu as refusé la demande de match.');
-    await requester.send(`❌ ${interaction.user.username} a refusé ton match.`);
-
-    return;
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferUpdate();
   }
+
+  let guild = interaction.client.guilds.cache.get(guildId);
+  if (!guild) {
+    guild = await interaction.client.guilds.fetch(guildId);
+  }
+
+  const requester = await guild.members.fetch(requesterId);
+
+  await interaction.user.send('❌ Tu as refusé la demande de match.');
+  await requester.send(`❌ ${interaction.user.username} a refusé ton match.`);
+
+  return;
+}
+
 };
