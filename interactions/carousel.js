@@ -20,7 +20,8 @@ module.exports = async function carouselHandler(interaction) {
 
     const profil = getRandomProfile(interaction.channel.id);
     if (!profil) {
-      return interaction.editReply('♻️ Tous les profils ont été vus.');
+      await interaction.editReply('♻️ Tous les profils ont été vus.');
+      return;
     }
 
     const row = new ActionRowBuilder().addComponents(
@@ -47,7 +48,7 @@ module.exports = async function carouselHandler(interaction) {
   // =========================
   if (!interaction.isButton()) return;
 
-  // ❌ Passer au profil suivant
+  // ❌ Passer
   if (interaction.customId === 'next_profile') {
     await interaction.deferUpdate();
     await interaction.channel.send('/profilaleatoire');
@@ -55,58 +56,35 @@ module.exports = async function carouselHandler(interaction) {
   }
 
   // 💘 Créer un match
-if (interaction.customId.startsWith('create_match:')) {
-  const ownerId = interaction.customId.split(':')[1];
-  const userId = interaction.user.id;
+  if (interaction.customId.startsWith('create_match:')) {
+    const ownerId = interaction.customId.split(':')[1];
+    const userId = interaction.user.id;
 
-  if (ownerId === userId) {
-    return interaction.reply({
-      content: '❌ Tu ne peux pas créer un match avec toi-même.',
-      ephemeral: true
-    });
-  }
-
-  // ✅ ACK correct pour un bouton
-  await interaction.deferUpdate();
-
-  const forum = interaction.guild.channels.cache.find(
-    c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
-  );
-
-  if (!forum) {
-    return interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
-  }
-
-  const matchKey = [userId, ownerId].sort().join('-');
-  matchs[matchKey] ??= false;
-
-  if (matchs[matchKey]) {
-    return interaction.channel.send('⚠️ Un match existe déjà.');
-  }
-
-  matchs[matchKey] = true;
-
-  await forum.threads.create({
-    name: `💘 ${interaction.user.username} x <@${ownerId}>`,
-    autoArchiveDuration: 1440,
-    message: {
-      content: `💘 **MATCH !**\n\n${interaction.user} & <@${ownerId}>\n\n✨ Faites connaissance ici !`
+    if (ownerId === userId) {
+      await interaction.reply({
+        content: '❌ Tu ne peux pas créer un match avec toi-même.',
+        ephemeral: true
+      });
+      return;
     }
-  });
 
-  // 🔔 feedback utilisateur
-  await interaction.channel.send(
-    `💘 Match créé entre ${interaction.user} et <@${ownerId}> !`
-  );
-}
+    await interaction.deferUpdate();
 
+    const forum = interaction.guild.channels.cache.find(
+      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
+    );
 
-    // 🔒 éviter doublon
+    if (!forum) {
+      await interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
+      return;
+    }
+
     const matchKey = [userId, ownerId].sort().join('-');
     matchs[matchKey] ??= false;
 
     if (matchs[matchKey]) {
-      return interaction.editReply('⚠️ Un match existe déjà.');
+      await interaction.channel.send('⚠️ Un match existe déjà.');
+      return;
     }
 
     matchs[matchKey] = true;
@@ -119,6 +97,10 @@ if (interaction.customId.startsWith('create_match:')) {
       }
     });
 
-    await interaction.editReply('💘 Match créé avec succès !');
+    await interaction.channel.send(
+      `💘 Match créé entre ${interaction.user} et <@${ownerId}> !`
+    );
+
+    return;
   }
 };

@@ -1,44 +1,60 @@
 const fs = require('fs');
-const path = require('path');
+const path = require('/data/profiles.json');
+const matchs = {};
 
-// 📁 chemin du disque persistant Render
-const DATA_DIR = '/data';
-const PROFILES_PATH = path.join(DATA_DIR, 'profiles.json');
-const MATCHS_PATH = path.join(DATA_DIR, 'matchs.json');
+const DATA_PATH = path.join(__dirname, '../profiles.json');
 
-// 🛠️ s'assurer que le dossier existe
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+// ===== DATA =====
+let profiles = fs.existsSync(path)
+  ? JSON.parse(fs.readFileSync(path, 'utf8'))
+  : {};
 
-// 🧠 charger ou initialiser les profils
-let profiles = {};
-if (fs.existsSync(PROFILES_PATH)) {
-  profiles = JSON.parse(fs.readFileSync(PROFILES_PATH, 'utf8'));
-} else {
-  fs.writeFileSync(PROFILES_PATH, JSON.stringify({}, null, 2));
-}
+const likes = {};        // { userId: [profileKey] }
+const seenProfiles = {}; // { channelId: [profileKey] }
 
-// 🧠 charger ou initialiser les matchs
-let matchs = {};
-if (fs.existsSync(MATCHS_PATH)) {
-  matchs = JSON.parse(fs.readFileSync(MATCHS_PATH, 'utf8'));
-} else {
-  fs.writeFileSync(MATCHS_PATH, JSON.stringify({}, null, 2));
-}
-
-// 💾 sauvegardes
+// ===== SAVE =====
 function saveProfiles() {
-  fs.writeFileSync(PROFILES_PATH, JSON.stringify(profiles, null, 2));
+  fs.writeFileSync(path, JSON.stringify(profiles, null, 2));
 }
 
-function saveMatchs() {
-  fs.writeFileSync(MATCHS_PATH, JSON.stringify(matchs, null, 2));
+// ===== GET ALL PROFILES =====
+function getAllProfiles() {
+  const arr = [];
+  for (const userId in profiles) {
+    for (const key in profiles[userId]) {
+      arr.push({
+        key,
+        ownerId: userId,
+        ...profiles[userId][key]
+      });
+    }
+  }
+  return arr;
 }
 
+// ===== RANDOM PROFILE (CAROUSEL) =====
+function getRandomProfile(channelId) {
+  const all = getAllProfiles();
+  if (!seenProfiles[channelId]) seenProfiles[channelId] = [];
+
+  const remaining = all.filter(p => !seenProfiles[channelId].includes(p.key));
+  if (!remaining.length) {
+    seenProfiles[channelId] = [];
+    return null;
+  }
+
+  const p = remaining[Math.floor(Math.random() * remaining.length)];
+  seenProfiles[channelId].push(p.key);
+  return p;
+}
+
+// ===== EXPORTS =====
 module.exports = {
   profiles,
+  likes,
   matchs,
+  seenProfiles,
   saveProfiles,
-  saveMatchs
+  getAllProfiles,
+  getRandomProfile
 };
