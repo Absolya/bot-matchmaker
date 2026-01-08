@@ -28,14 +28,15 @@ module.exports = async function carouselHandler(interaction) {
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-    .setCustomId(`create_match:${profil.ownerId}`)
-    .setLabel('💘 Accepter le match')
+    .setCustomId(`create_match:${profil.ownerId}:${Date.now()}`)
+    .setLabel('💘 Créer un match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
-    .setCustomId(`create_match:${profil.ownerId}`)
-    .setLabel('❌ Refuser')
+    .setCustomId(`next_profile:${Date.now()}`)
+    .setLabel('❌ Passer')
     .setStyle(ButtonStyle.Secondary)
 );
+
 
     await interaction.editReply({
       embeds: [profileEmbed(profil)],
@@ -51,7 +52,7 @@ const row = new ActionRowBuilder().addComponents(
   if (!interaction.isButton()) return;
 
   // ❌ Passer au profil suivant
-  if (interaction.customId === 'next_profile') {
+  if (interaction.customId.startsWith('next_profile')) {
     if (!interaction.deferred && !interaction.replied) {
       await interaction.deferUpdate();
     }
