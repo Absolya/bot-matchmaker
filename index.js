@@ -15,6 +15,8 @@ const storage = require('./utils/storage');
 const { profileEmbed, previewProfileEmbed } = require('./utils/embeds');
 const carouselHandler = require('./interactions/carousel');
 const profilesHandler = require('./interactions/profiles');
+const voirProfilsHandler = require('./interactions/voirProfils');
+
 
 // ===== CLIENT =====
 const client = new Client({
@@ -35,7 +37,10 @@ const commands = [
    // 👇 CELLE-CI DOIT ÊTRE ICI
   new SlashCommandBuilder()
     .setName('annulerprofil')
-    .setDescription('Annuler la création de profil en cours')
+    .setDescription('Annuler la création de profil en cours'),
+  new SlashCommandBuilder()
+  .setName('voirprofils')
+  .setDescription('Voir tous les profils enregistrés')  
 ].map(c => c.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -60,11 +65,15 @@ client.on('interactionCreate', async interaction => {
   // =========================
   if (interaction.isChatInputCommand()) {
     const command = interaction.commandName;
-
+    
     // 👤 PROFILS
     if (['creerprofil', 'mesprofils', 'annulerprofil'].includes(command)) {
       return profilesHandler(interaction);
     }
+
+if (command === 'voirprofils') {
+  return voirProfilsHandler(interaction);
+}
 
     // 🎴 CAROUSEL
     if (command === 'profilaleatoire') {
