@@ -1,3 +1,7 @@
+const pendingMatches = new Map();
+// key: interaction.message.id
+// value: { ownerId, characterName }
+
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -24,11 +28,22 @@ module.exports = async function carouselHandler(interaction) {
       return;
     }
 
+    const message = await interaction.editReply({
+  embeds: [profileEmbed(profil)],
+  components: [row],
+  fetchReply: true
+});
+
+pendingMatches.set(message.id, {
+  ownerId: profil.ownerId,
+  characterName: `${profil.prenom} ${profil.nom}`
+});
+
     const guildId = interaction.guild.id;
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-    .setCustomId(`create_match:${profil.ownerId}:${profil.prenom}_${profil.nom}:${Date.now()}`)
+     .setCustomId('create_match')
     .setLabel('💘 Créer un match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
@@ -64,66 +79,57 @@ const row = new ActionRowBuilder().addComponents(
   // =========================
   // 💘 DEMANDE DE MATCH
   // =========================
-  if (interaction.customId.startsWith('create_match:')) {
-    const parts = interaction.customId.split(':');
+  if (interaction.customId === 'create_match') {
 
-const ownerId = parts[1];
+  const matchData = pendingMatches.get(interaction.message.id);
 
-// 🔐 on récupère la partie qui n'est PAS un timestamp
-const characterRaw = parts.find(
-  p => p !== 'create_match' && p !== ownerId && !/^\d+$/.test(p)
-);
+  if (!matchData) {
+    await interaction.channel.send('❌ Impossible de retrouver le profil.');
+    return;
+  }
 
-if (!characterRaw) {
-  await interaction.channel.send('❌ Impossible de déterminer le personnage.');
+  const { ownerId, characterName } = matchData;
+  const userId = interaction.user.id;
+
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferUpdate();
+  }
+
+  if (ownerId === userId) {
+    await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
+    return;
+  }
+
+  const matchedMember = await interaction.guild.members.fetch(ownerId);
+  const guildId = interaction.guild.id;
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`accept_match:${userId}:${guildId}`)
+      .setLabel('💘 Accepter le match')
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(`decline_match:${userId}:${guildId}`)
+      .setLabel('❌ Refuser')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  await matchedMember.send({
+    content:
+      `💌 **Demande de match RP**\n\n` +
+      `🧑‍🎭 **Personnage : ${characterName}**\n\n` +
+      `${interaction.user} souhaite ouvrir un match RP avec ce personnage.\n\n` +
+      `Souhaites-tu accepter ?`,
+    components: [row]
+  });
+
+  await interaction.channel.send(
+    `📨 Demande envoyée à **${matchedMember.user.username}**…`
+  );
+
   return;
 }
 
-const characterName = characterRaw.replace(/_/g, ' ');
-
-
-    const userId = interaction.user.id;
-
-    if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferUpdate();
-    }
-
-    if (ownerId === userId) {
-      await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
-      return;
-    }
-
-    const matchedMember = await interaction.guild.members.fetch(ownerId);
-
-   const guildId = interaction.guild.id;
-
-const row = new ActionRowBuilder().addComponents(
-  new ButtonBuilder()
-    .setCustomId(`accept_match:${userId}:${guildId}:${characterRaw}`)
-    .setLabel('💘 Accepter le match')
-    .setStyle(ButtonStyle.Success),
-  new ButtonBuilder()
-    .setCustomId(`decline_match:${userId}:${guildId}:${characterRaw}`)
-    .setLabel('❌ Refuser')
-    .setStyle(ButtonStyle.Secondary)
-);
-
-
-    await matchedMember.send({
-  content:
-    `💌 **Demande de match RP**\n\n` +
-    `🧑‍🎭 **Personnage : ${characterName}**\n\n` +
-    `${interaction.user} souhaite ouvrir un match RP avec ce personnage.\n\n` +
-    `Souhaites-tu accepter ?`,
-  components: [row]
-});
-
-    await interaction.channel.send(
-      `📨 Demande envoyée à **${matchedMember.user.username}**…`
-    );
-
-    return;
-  }
 
   // =========================
   // ✅ ACCEPTATION DU MATCH
