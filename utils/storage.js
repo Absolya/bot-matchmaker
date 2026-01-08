@@ -1,23 +1,46 @@
 const fs = require('fs');
-const path = require('/data/profiles.json');
-const matchs = {};
+const path = require('path');
 
-const DATA_PATH = path.join(__dirname, '../profiles.json');
+// =========================
+// 📁 DOSSIER PERSISTANT RENDER
+// =========================
+const DATA_DIR = '/data';
+const PROFILES_PATH = path.join(DATA_DIR, 'profiles.json');
 
-// ===== DATA =====
-let profiles = fs.existsSync(path)
-  ? JSON.parse(fs.readFileSync(path, 'utf8'))
-  : {};
-
-const likes = {};        // { userId: [profileKey] }
-const seenProfiles = {}; // { channelId: [profileKey] }
-
-// ===== SAVE =====
-function saveProfiles() {
-  fs.writeFileSync(path, JSON.stringify(profiles, null, 2));
+// =========================
+// 🛠️ S'ASSURER QUE /data EXISTE
+// =========================
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// ===== GET ALL PROFILES =====
+// =========================
+// 📦 PROFILS
+// =========================
+let profiles = {};
+if (fs.existsSync(PROFILES_PATH)) {
+  profiles = JSON.parse(fs.readFileSync(PROFILES_PATH, 'utf8'));
+} else {
+  fs.writeFileSync(PROFILES_PATH, JSON.stringify({}, null, 2));
+}
+
+// =========================
+// 💘 AUTRES DONNÉES
+// =========================
+const likes = {};         // { userId: [profileKey] }
+const seenProfiles = {};  // { channelId: [profileKey] }
+const matchs = {};        // { "userA-userB": true }
+
+// =========================
+// 💾 SAUVEGARDE
+// =========================
+function saveProfiles() {
+  fs.writeFileSync(PROFILES_PATH, JSON.stringify(profiles, null, 2));
+}
+
+// =========================
+// 📋 TOUS LES PROFILS
+// =========================
 function getAllProfiles() {
   const arr = [];
   for (const userId in profiles) {
@@ -32,7 +55,9 @@ function getAllProfiles() {
   return arr;
 }
 
-// ===== RANDOM PROFILE (CAROUSEL) =====
+// =========================
+// 🎲 PROFIL ALÉATOIRE
+// =========================
 function getRandomProfile(channelId) {
   const all = getAllProfiles();
   if (!seenProfiles[channelId]) seenProfiles[channelId] = [];
@@ -48,7 +73,9 @@ function getRandomProfile(channelId) {
   return p;
 }
 
-// ===== EXPORTS =====
+// =========================
+// 📤 EXPORTS
+// =========================
 module.exports = {
   profiles,
   likes,
