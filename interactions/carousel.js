@@ -66,6 +66,12 @@ const row = new ActionRowBuilder().addComponents(
   // =========================
   if (interaction.customId.startsWith('create_match:')) {
     const parts = interaction.customId.split(':');
+
+const ownerId = parts[1];
+const characterRaw = parts[2]; // 👈 TOUJOURS ici
+const characterName = characterRaw.replace(/_/g, ' ');
+
+
     const userId = interaction.user.id;
 
     if (!interaction.deferred && !interaction.replied) {
@@ -80,10 +86,6 @@ const row = new ActionRowBuilder().addComponents(
     const matchedMember = await interaction.guild.members.fetch(ownerId);
 
    const guildId = interaction.guild.id;
-
-const ownerId = parts[1];
-const characterRaw = parts[2]; // 👈 TOUJOURS ici
-const characterName = characterRaw.replace(/_/g, ' ');
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
