@@ -43,165 +43,126 @@ module.exports = async function carouselHandler(interaction) {
     return;
   }
 
- // =========================
-// BOUTONS
-// =========================
-if (!interaction.isButton()) return;
+  // =========================
+  // BOUTONS
+  // =========================
+  if (!interaction.isButton()) return;
 
-// ⚠️ IMPORTANT : STOP ici si déjà répondu
-if (interaction.replied || interaction.deferred) return;
-
-// ❌ Passer
-if (interaction.customId === 'next_profile') {
-if (!interaction.deferred && !interaction.replied) {
-  await interaction.deferUpdate();
-}
-  await interaction.channel.send('/profilaleatoire');
-  return;
-}
-
-// 💘 Créer un match
-if (interaction.customId.startsWith('create_match:')) {
-  const ownerId = interaction.customId.split(':')[1];
-  const userId = interaction.user.id;
-
-if (!interaction.deferred && !interaction.replied) {
-  await interaction.deferUpdate();
-}
-} // ✅ UNE SEULE FOIS
-
-  if (ownerId === userId) {
-    await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
-    return;
-  }
-
-  const forum = interaction.guild.channels.cache.find(
-    c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
-  );
-
-  if (!forum) {
-    await interaction.channel.send('❌ Forum 🫶-matchs introuvable.');
-    return;
-  }
-
-  const matchKey = [userId, ownerId].sort().join('-');
-  if (matchs[matchKey]) {
-    await interaction.channel.send('⚠️ Match déjà existant.');
-    return;
-  }
-
-  matchs[matchKey] = true;
-
-const matchedMember = await interaction.guild.members.fetch(ownerId);
-
-  if (interaction.customId.startsWith('create_match:')) {
-  const ownerId = interaction.customId.split(':')[1];
-  const userId = interaction.user.id;
-
-  // ACK du bouton (OBLIGATOIRE)
-if (!interaction.deferred && !interaction.replied) {
-  await interaction.deferUpdate();
-}
-  // sécurité
-  if (ownerId === userId) {
-    await interaction.channel.send('❌ Tu ne peux pas créer un match avec toi-même.');
-    return;
-  }
-
-  // récupérer le membre matché
-  const matchedMember = await interaction.guild.members.fetch(ownerId);
-
-  // boutons de confirmation
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`accept_match:${userId}`)
-      .setLabel('💘 Accepter le match')
-      .setStyle(ButtonStyle.Success),
-    new ButtonBuilder()
-      .setCustomId(`decline_match:${userId}`)
-      .setLabel('❌ Refuser')
-      .setStyle(ButtonStyle.Secondary)
-  );
-
-  // envoyer la demande en DM
-  await matchedMember.send({
-    content:
-      `💌 **Demande de match RP**\n\n` +
-      `${interaction.user} souhaite ouvrir un match RP avec toi.\n\n` +
-      `Souhaites-tu accepter ?`,
-    components: [row]
-  });
-
-  // feedback léger côté public
-  await interaction.channel.send(
-    `📨 Demande de match envoyée à **${matchedMember.user.username}**…`
-  );
-
-  return;
-}
-
-if (interaction.customId.startsWith('accept_match:')) {
-  const requesterId = interaction.customId.split(':')[1]; // A
-  const accepterId = interaction.user.id;                  // B
-
- if (!interaction.deferred && !interaction.replied) {
-  await interaction.deferUpdate();
-}; // ACK bouton
-
-  const guild = interaction.guild || interaction.client.guilds.cache.first();
-
-  const requester = await guild.members.fetch(requesterId);
-  const accepter = await guild.members.fetch(accepterId);
-
-  // retrouver le forum 🫶-matchs
-  const forum = guild.channels.cache.find(
-    c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
-  );
-
-  if (!forum) {
-    await interaction.user.send('❌ Le forum 🫶-matchs est introuvable.');
-    return;
-  }
-
-  // créer le thread
-  await forum.threads.create({
-    name: `💘 ${requester.user.username} x ${accepter.user.username}`,
-    autoArchiveDuration: 1440,
-    message: {
-      content:
-        `💘 **MATCH CONFIRMÉ !**\n\n` +
-        `${requester} & ${accepter}\n\n` +
-        `✨ À vous de jouer 💬`
+  // ❌ Passer au profil suivant
+  if (interaction.customId === 'next_profile') {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
     }
-  });
 
-  // notifications
-  await accepter.send('💘 Match accepté ! Le salon a été créé.');
-  await requester.send(`💘 ${accepter.user.username} a accepté ton match !`);
+    await interaction.channel.send('/profilaleatoire');
+    return;
+  }
 
-  return;
-}
+  // =========================
+  // 💘 DEMANDE DE MATCH
+  // =========================
+  if (interaction.customId.startsWith('create_match:')) {
+    const ownerId = interaction.customId.split(':')[1];
+    const userId = interaction.user.id;
 
-if (interaction.customId.startsWith('decline_match:')) {
-  const requesterId = interaction.customId.split(':')[1];
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
 
-if (!interaction.deferred && !interaction.replied) {
-  await interaction.deferUpdate();
-} // ACK bouton
+    if (ownerId === userId) {
+      await interaction.channel.send('❌ Tu ne peux pas matcher avec toi-même.');
+      return;
+    }
 
-  const guild = interaction.guild || interaction.client.guilds.cache.first();
-  const requester = await guild.members.fetch(requesterId);
+    const matchedMember = await interaction.guild.members.fetch(ownerId);
 
-  // notifications
-  await interaction.user.send('❌ Tu as refusé la demande de match.');
-  await requester.send(`❌ ${interaction.user.username} a refusé ton match.`);
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`accept_match:${userId}`)
+        .setLabel('💘 Accepter le match')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`decline_match:${userId}`)
+        .setLabel('❌ Refuser')
+        .setStyle(ButtonStyle.Secondary)
+    );
 
-  return;
-}
+    await matchedMember.send({
+      content:
+        `💌 **Demande de match RP**\n\n` +
+        `${interaction.user} souhaite ouvrir un match RP avec toi.\n\n` +
+        `Souhaites-tu accepter ?`,
+      components: [row]
+    });
 
-  await interaction.channel.send(
-    `💘 Match créé entre ${interaction.user} et <@${ownerId}> !`
-  );
-}
+    await interaction.channel.send(
+      `📨 Demande envoyée à **${matchedMember.user.username}**…`
+    );
 
+    return;
+  }
+
+  // =========================
+  // ✅ ACCEPTATION DU MATCH
+  // =========================
+  if (interaction.customId.startsWith('accept_match:')) {
+    const requesterId = interaction.customId.split(':')[1];
+    const accepterId = interaction.user.id;
+
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
+
+    const guild = interaction.guild;
+    const requester = await guild.members.fetch(requesterId);
+    const accepter = await guild.members.fetch(accepterId);
+
+    const forum = guild.channels.cache.find(
+      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
+    );
+
+    if (!forum) {
+      await interaction.user.send('❌ Le forum 🫶-matchs est introuvable.');
+      return;
+    }
+
+    const matchKey = [requesterId, accepterId].sort().join('-');
+    if (matchs[matchKey]) return;
+    matchs[matchKey] = true;
+
+    await forum.threads.create({
+      name: `💘 ${requester.user.username} x ${accepter.user.username}`,
+      autoArchiveDuration: 1440,
+      message: {
+        content:
+          `💘 **MATCH CONFIRMÉ !**\n\n` +
+          `${requester} & ${accepter}\n\n` +
+          `✨ À vous de jouer 💬`
+      }
+    });
+
+    await accepter.send('💘 Match accepté ! Le salon a été créé.');
+    await requester.send(`💘 ${accepter.user.username} a accepté ton match !`);
+
+    return;
+  }
+
+  // =========================
+  // ❌ REFUS DU MATCH
+  // =========================
+  if (interaction.customId.startsWith('decline_match:')) {
+    const requesterId = interaction.customId.split(':')[1];
+
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
+
+    const guild = interaction.guild;
+    const requester = await guild.members.fetch(requesterId);
+
+    await interaction.user.send('❌ Tu as refusé la demande de match.');
+    await requester.send(`❌ ${interaction.user.username} a refusé ton match.`);
+
+    return;
+  }
 };
