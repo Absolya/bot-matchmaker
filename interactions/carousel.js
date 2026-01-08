@@ -66,9 +66,11 @@ const row = new ActionRowBuilder().addComponents(
   // =========================
   if (interaction.customId.startsWith('create_match:')) {
     const parts = interaction.customId.split(':');
+
 const ownerId = parts[1];
-const characterRaw = parts[2];
+const characterRaw = parts[2]; // 👈 TOUJOURS ici
 const characterName = characterRaw.replace(/_/g, ' ');
+
 
     const userId = interaction.user.id;
 
@@ -87,11 +89,11 @@ const characterName = characterRaw.replace(/_/g, ' ');
 
 const row = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
-    .setCustomId(`accept_match:${userId}:${guildId}`)
+    .setCustomId(`accept_match:${userId}:${guildId}:${characterRaw}`)
     .setLabel('💘 Accepter le match')
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
-    .setCustomId(`decline_match:${userId}:${guildId}`)
+    .setCustomId(`decline_match:${userId}:${guildId}:${characterRaw}`)
     .setLabel('❌ Refuser')
     .setStyle(ButtonStyle.Secondary)
 );
@@ -117,7 +119,13 @@ const row = new ActionRowBuilder().addComponents(
   // ✅ ACCEPTATION DU MATCH
   // =========================
   if (interaction.customId.startsWith('accept_match:')) {
-  const [, requesterId, guildId] = interaction.customId.split(':');
+ const parts = interaction.customId.split(':');
+
+const requesterId = parts[1];
+const guildId = parts[2];
+const characterRaw = parts[3];
+const characterName = characterRaw.replace(/_/g, ' ');
+
 
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferUpdate();
@@ -155,9 +163,10 @@ const row = new ActionRowBuilder().addComponents(
     autoArchiveDuration: 1440,
     message: {
       content:
-        `💘 **MATCH CONFIRMÉ !**\n\n` +
-        `${requester} & ${accepter}\n\n` +
-        `✨ À vous de jouer 💬`
+  `💘 **MATCH CONFIRMÉ !**\n\n` +
+  `🧑‍🎭 **${characterName}**\n` +
+  `${requester} & ${accepter}\n\n` +
+  `✨ À vous de jouer 💬`
     }
   });
 
