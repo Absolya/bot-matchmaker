@@ -101,8 +101,8 @@ module.exports = async function carouselHandler(interaction) {
     await matchedMember.send({
       content:
         `💌 **Demande de match RP**\n\n` +
-        `🧑‍🎭 **Personnage : ${characterName}**\n\n` +
-        `${interaction.user} souhaite ouvrir un match RP avec ce personnage.\n\n` +
+        `🧑‍🎭 **Personnage Concernée pour la demande de match : ${characterName}**\n\n` +
+        `${interaction.user} souhaite ouvrir un match RP avec ${characterName} \n\n` +
         `Souhaites-tu accepter ?`,
       components: [row]
     });
