@@ -6,6 +6,7 @@ const {
 
 const { profileEmbed } = require('../utils/embeds');
 const { getAllProfiles } = require('../utils/storage');
+const { pendingMatches } = require('./carousel');
 
 module.exports = async function voirProfilsHandler(interaction) {
   if (!interaction.isChatInputCommand()) return;
@@ -14,22 +15,28 @@ module.exports = async function voirProfilsHandler(interaction) {
   const allProfiles = getAllProfiles();
 
   if (!allProfiles.length) {
-    await interaction.reply({
+    return interaction.reply({
       content: '❌ Aucun profil enregistré.',
       ephemeral: true
     });
-    return;
   }
 
   let index = 0;
 
-  const getRow = () =>
+  // 🔁 Génération des boutons
+  const getRow = (profile) =>
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('voirprofils_prev')
         .setLabel('⬅️')
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(index === 0),
+
+      new ButtonBuilder()
+        .setCustomId('create_match')
+        .setLabel('💘 Créer un match')
+        .setStyle(ButtonStyle.Success),
+
       new ButtonBuilder()
         .setCustomId('voirprofils_next')
         .setLabel('➡️')
@@ -37,13 +44,19 @@ module.exports = async function voirProfilsHandler(interaction) {
         .setDisabled(index === allProfiles.length - 1)
     );
 
-  await interaction.reply({
+  // 📤 Envoi initial
+  const message = await interaction.reply({
     embeds: [profileEmbed(allProfiles[index])],
-    components: [getRow()],
+    components: [getRow(allProfiles[index])],
+    fetchReply: true,
     ephemeral: true
   });
 
-  const message = await interaction.fetchReply();
+  // 🧠 Stocker le profil affiché pour le match
+  pendingMatches.set(message.id, {
+    ownerId: allProfiles[index].ownerId,
+    characterName: `${allProfiles[index].prenom} ${allProfiles[index].nom}`
+  });
 
   const collector = message.createMessageComponentCollector({
     time: 5 * 60 * 1000
@@ -51,16 +64,25 @@ module.exports = async function voirProfilsHandler(interaction) {
 
   collector.on('collect', async i => {
     if (i.user.id !== interaction.user.id) {
-      await i.reply({ content: '❌ Ce menu ne t’est pas destiné.', ephemeral: true });
-      return;
+      return i.reply({
+        content: '❌ Ce menu ne t’est pas destiné.',
+        ephemeral: true
+      });
     }
 
     if (i.customId === 'voirprofils_next') index++;
     if (i.customId === 'voirprofils_prev') index--;
 
+    // 🔄 Mise à jour du profil affiché
     await i.update({
       embeds: [profileEmbed(allProfiles[index])],
-      components: [getRow()]
+      components: [getRow(allProfiles[index])]
+    });
+
+    // 🔁 Mise à jour du pending match
+    pendingMatches.set(message.id, {
+      ownerId: allProfiles[index].ownerId,
+      characterName: `${allProfiles[index].prenom} ${allProfiles[index].nom}`
     });
   });
 };
