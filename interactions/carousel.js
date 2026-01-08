@@ -79,16 +79,19 @@ const row = new ActionRowBuilder().addComponents(
 
     const matchedMember = await interaction.guild.members.fetch(ownerId);
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`accept_match:${userId}`)
-        .setLabel('💘 Accepter le match')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId(`decline_match:${userId}`)
-        .setLabel('❌ Refuser')
-        .setStyle(ButtonStyle.Secondary)
-    );
+   const guildId = interaction.guild.id;
+
+const row = new ActionRowBuilder().addComponents(
+  new ButtonBuilder()
+    .setCustomId(`accept_match:${userId}:${guildId}`)
+    .setLabel('💘 Accepter le match')
+    .setStyle(ButtonStyle.Success),
+  new ButtonBuilder()
+    .setCustomId(`decline_match:${userId}:${guildId}`)
+    .setLabel('❌ Refuser')
+    .setStyle(ButtonStyle.Secondary)
+);
+
 
     await matchedMember.send({
       content:
