@@ -7,7 +7,7 @@ function profileEmbed(p) {
       `**Âge :** ${p.age}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
 
-      `**Quartier :** ${p.quartier}\n` +
+      `**Quartier :** ${p.quartier}\n\n` +
 
       `**Situation :** ${p.situation}\n` +
       `**Orientation :** ${p.orientation}\n` +
@@ -29,7 +29,7 @@ function previewProfileEmbed(p) {
       `**Âge :** ${p.age}\n` +
       `**Sexe :** ${p.sexe}\n\n` +
 
-      `**Quartier :** ${p.quartier}\n` +
+      `**Quartier :** ${p.quartier}\n\n` +
 
       `**Situation :** ${p.situation}\n` +
       `**Orientation :** ${p.orientation}\n` +
