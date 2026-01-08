@@ -24,16 +24,18 @@ module.exports = async function carouselHandler(interaction) {
       return;
     }
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`create_match:${profil.ownerId}`)
-        .setLabel('💘 Créer un match')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId('next_profile')
-        .setLabel('❌ Passer')
-        .setStyle(ButtonStyle.Secondary)
-    );
+    const guildId = interaction.guild.id;
+
+const row = new ActionRowBuilder().addComponents(
+  new ButtonBuilder()
+    .setCustomId(`accept_match:${userId}:${guildId}`)
+    .setLabel('💘 Accepter le match')
+    .setStyle(ButtonStyle.Success),
+  new ButtonBuilder()
+    .setCustomId(`decline_match:${userId}:${guildId}`)
+    .setLabel('❌ Refuser')
+    .setStyle(ButtonStyle.Secondary)
+);
 
     await interaction.editReply({
       embeds: [profileEmbed(profil)],
@@ -106,46 +108,48 @@ module.exports = async function carouselHandler(interaction) {
   // ✅ ACCEPTATION DU MATCH
   // =========================
   if (interaction.customId.startsWith('accept_match:')) {
-    const requesterId = interaction.customId.split(':')[1];
-    const accepterId = interaction.user.id;
+  const [, requesterId, guildId] = interaction.customId.split(':');
 
-    if (!interaction.deferred && !interaction.replied) {
-      await interaction.deferUpdate();
-    }
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferUpdate();
+  }
 
-    const guild = interaction.guild;
-    const requester = await guild.members.fetch(requesterId);
-    const accepter = await guild.members.fetch(accepterId);
+  // 🔁 récupérer le serveur depuis l'ID
+  const guild = await interaction.client.guilds.fetch(guildId);
 
-    const forum = guild.channels.cache.find(
-      c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
-    );
+  const requester = await guild.members.fetch(requesterId);
+  const accepter = await guild.members.fetch(interaction.user.id);
 
-    if (!forum) {
-      await interaction.user.send('❌ Le forum 🫶-matchs est introuvable.');
-      return;
-    }
+  const forum = guild.channels.cache.find(
+    c => c.type === ChannelType.GuildForum && c.name === '🫶-matchs'
+  );
 
-    const matchKey = [requesterId, accepterId].sort().join('-');
-    if (matchs[matchKey]) return;
-    matchs[matchKey] = true;
-
-    await forum.threads.create({
-      name: `💘 ${requester.user.username} x ${accepter.user.username}`,
-      autoArchiveDuration: 1440,
-      message: {
-        content:
-          `💘 **MATCH CONFIRMÉ !**\n\n` +
-          `${requester} & ${accepter}\n\n` +
-          `✨ À vous de jouer 💬`
-      }
-    });
-
-    await accepter.send('💘 Match accepté ! Le salon a été créé.');
-    await requester.send(`💘 ${accepter.user.username} a accepté ton match !`);
-
+  if (!forum) {
+    await interaction.user.send('❌ Le forum 🫶-matchs est introuvable.');
     return;
   }
+
+  const matchKey = [requester.id, accepter.id].sort().join('-');
+  if (matchs[matchKey]) return;
+  matchs[matchKey] = true;
+
+  await forum.threads.create({
+    name: `💘 ${requester.user.username} x ${accepter.user.username}`,
+    autoArchiveDuration: 1440,
+    message: {
+      content:
+        `💘 **MATCH CONFIRMÉ !**\n\n` +
+        `${requester} & ${accepter}\n\n` +
+        `✨ À vous de jouer 💬`
+    }
+  });
+
+  await accepter.send('💘 Match accepté ! Le salon a été créé.');
+  await requester.send(`💘 ${accepter.user.username} a accepté ton match !`);
+
+  return;
+}
+
 
   // =========================
   // ❌ REFUS DU MATCH
