@@ -65,6 +65,7 @@ const row = new ActionRowBuilder().addComponents(
   // 💘 DEMANDE DE MATCH
   // =========================
   if (interaction.customId.startsWith('create_match:')) {
+    const parts = interaction.customId.split(':');
     const userId = interaction.user.id;
 
     if (!interaction.deferred && !interaction.replied) {
@@ -80,9 +81,8 @@ const row = new ActionRowBuilder().addComponents(
 
    const guildId = interaction.guild.id;
 
-const parts = interaction.customId.split(':');
 const ownerId = parts[1];
-const characterRaw = parts[2];
+const characterRaw = parts[2]; // 👈 TOUJOURS ici
 const characterName = characterRaw.replace(/_/g, ' ');
 
 const row = new ActionRowBuilder().addComponents(
